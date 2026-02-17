@@ -1,0 +1,31 @@
+package com.pb.scheduling.repository;
+
+import com.pb.scheduling.domain.entity.SlotReservation;
+import com.pb.scheduling.domain.enums.SlotReservationStatus;
+import org.springframework.data.jpa.repository.*;
+import org.springframework.data.repository.query.Param;
+
+import java.time.OffsetDateTime;
+import java.util.Optional;
+import java.util.UUID;
+
+public interface SlotReservationRepository extends JpaRepository<SlotReservation, UUID> {
+
+    @Query("""
+        select count(r) from SlotReservation r
+        where r.gameSlotId = :slotId
+          and (
+               r.status = com.pb.scheduling.domain.enums.SlotReservationStatus.CONFIRMED
+               or (r.status = com.pb.scheduling.domain.enums.SlotReservationStatus.HOLD and r.expiresAt > :now)
+          )
+    """)
+    long countActive(@Param("slotId") UUID slotId, @Param("now") OffsetDateTime now);
+
+    Optional<SlotReservation> findByIdAndBookingId(UUID id, UUID bookingId);
+
+    @Query("""
+        select r from SlotReservation r
+        where r.id = :id
+    """)
+    Optional<SlotReservation> findSimple(@Param("id") UUID id);
+}
