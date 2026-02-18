@@ -20,26 +20,32 @@ public class ZoneController {
 
     @PostMapping("/zones/{zoneId}/holds")
     @ResponseStatus(HttpStatus.CREATED)
-    public Map<String, Object> hold(@PathVariable UUID zoneId, @Valid @RequestBody HoldZoneRequest req) {
+    public Map<String, Object> hold(
+            @PathVariable("zoneId") UUID zoneId,
+            @Valid @RequestBody HoldZoneRequest req) {
         UUID id = zoneService.holdZone(zoneId, req.getBookingId(), req.getStartTime(), req.getEndTime());
         return Map.of("zoneReservationId", id);
     }
 
     @PostMapping("/zone-holds/{zoneReservationId}/confirm")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void confirm(@PathVariable UUID zoneReservationId, @Valid @RequestBody ConfirmByBookingRequest req) {
+    public void confirm(
+            @PathVariable("zoneReservationId") UUID zoneReservationId,
+            @Valid @RequestBody ConfirmByBookingRequest req) {
         zoneService.confirmZoneHold(zoneReservationId, req.getBookingId());
     }
 
     @PostMapping("/zone-holds/{zoneReservationId}/cancel")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void cancel(@PathVariable UUID zoneReservationId, @Valid @RequestBody ConfirmByBookingRequest req) {
+    public void cancel(
+            @PathVariable("zoneReservationId") UUID zoneReservationId,
+            @Valid @RequestBody ConfirmByBookingRequest req) {
         zoneService.cancelZoneHold(zoneReservationId, req.getBookingId());
     }
 
     @PostMapping("/zone-reservations/{zoneReservationId}/extend")
     @ResponseStatus(HttpStatus.CREATED)
-    public Map<String, Object> extend(@PathVariable UUID zoneReservationId,
+    public Map<String, Object> extend(@PathVariable("zoneReservationId") UUID zoneReservationId,
                                       @Valid @RequestBody ExtendZoneRequest req,
                                       @RequestParam UUID bookingId) {
         UUID id = zoneService.extend(zoneReservationId, bookingId, req.getNewEndTime(), req.getExtendMinutes());
