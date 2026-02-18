@@ -150,9 +150,7 @@ Booking-service:
 ## Database & migrations
 - PostgreSQL
 - Flyway migrations in: `src/main/resources/db/migration`
-  - `V0__schema.sql` (schema)
-  - `V1__init.sql` (tables + enums)
-  - `V2__indexes.sql` (indexes)
+сами зайдите в папку да посмотрите миграции (в будущем напишу)
 
 ---
 
@@ -161,3 +159,22 @@ Booking-service:
 ### Run PostgreSQL
 ```bash
 docker compose up -d
+```
+
+### Run service
+
+```bash
+mvn -pl scheduling-app spring-boot:run
+```
+
+### Roadmap (planned)
+
+- Seed data: arenas, zones, schedule template
+- Admin endpoints for schedule generation + slot status changes
+- Expiration jobs:
+  - cancel expired HOLDs
+  - finish outdated zone reservations
+- Observability:
+  - structured logs
+  - metrics
+- API docs via OpenAPI/Swagger
