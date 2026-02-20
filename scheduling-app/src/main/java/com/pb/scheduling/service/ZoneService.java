@@ -1,5 +1,6 @@
 package com.pb.scheduling.service;
 
+import com.pb.scheduling.api.dto.response.HoldZoneResponse;
 import com.pb.scheduling.domain.entity.Zone;
 import com.pb.scheduling.domain.entity.ZoneReservation;
 import com.pb.scheduling.domain.enums.ZoneReservationStatus;
@@ -12,7 +13,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -24,24 +24,35 @@ public class ZoneService {
     private final ZoneReservationRepository zoneReservationRepository;
 
     @Transactional
-    public UUID holdZone(UUID zoneId, UUID bookingId, OffsetDateTime start, OffsetDateTime end) {
+    public HoldZoneResponse holdZone(UUID zoneId,
+                                     UUID bookingId,
+                                     OffsetDateTime start,
+                                     OffsetDateTime end,
+                                     int holdMinutes) {
+
+        if (start == null || end == null) {
+            throw BusinessException.of("INVALID_TIME", "startTime/endTime must be provided",
+                    Map.of("startTime", start, "endTime", end));
+        }
         if (!end.isAfter(start)) {
             throw BusinessException.of("INVALID_TIME", "endTime must be after startTime",
                     Map.of("startTime", start, "endTime", end));
         }
 
         Zone zone = zoneRepository.findByIdForUpdate(zoneId)
-                .orElseThrow(() -> NotFoundException.of("ZONE_NOT_FOUND", "Zone not found", Map.of("zoneId", zoneId)));
+                .orElseThrow(() -> NotFoundException.of(
+                        "ZONE_NOT_FOUND", "Zone not found", Map.of("zoneId", zoneId)
+                ));
 
         if (!zone.isActive()) {
             throw BusinessException.of("ZONE_INACTIVE", "Zone is inactive", Map.of("zoneId", zoneId));
         }
 
-        // ACTIVE + HOLD (без expiry в текущей модели)
+        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime expiresAt = now.plusMinutes(Math.max(1, holdMinutes));
+
         long overlaps = zoneReservationRepository.countOverlaps(
-                zoneId, start, end,
-                List.of(ZoneReservationStatus.ACTIVE, ZoneReservationStatus.HOLD),
-                null
+                zoneId, start, end, now, null
         );
 
         if (overlaps >= zone.getCapacityCompanies()) {
@@ -56,12 +67,13 @@ public class ZoneService {
                 start,
                 end,
                 ZoneReservationStatus.HOLD,
-                OffsetDateTime.now(),
-                null
+                now,
+                null,      // parentReservationId
+                expiresAt  // expiresAt
         );
 
         zoneReservationRepository.save(r);
-        return r.getId();
+        return new HoldZoneResponse(r.getId(), expiresAt);
     }
 
     @Transactional
@@ -80,14 +92,19 @@ public class ZoneService {
                     Map.of("zoneReservationId", zoneReservationId, "status", r.getStatus().name()));
         }
 
+        // истёкший HOLD нельзя подтверждать
+        OffsetDateTime now = OffsetDateTime.now();
+        if (r.getExpiresAt() == null || !r.getExpiresAt().isAfter(now)) {
+            throw BusinessException.of("HOLD_EXPIRED", "Zone hold expired",
+                    Map.of("zoneReservationId", zoneReservationId, "expiresAt", r.getExpiresAt()));
+        }
+
         Zone zone = zoneRepository.findByIdForUpdate(r.getZoneId())
                 .orElseThrow(() -> NotFoundException.of("ZONE_NOT_FOUND", "Zone not found",
                         Map.of("zoneId", r.getZoneId())));
 
         long overlaps = zoneReservationRepository.countOverlaps(
-                r.getZoneId(), r.getStartTime(), r.getEndTime(),
-                List.of(ZoneReservationStatus.ACTIVE, ZoneReservationStatus.HOLD),
-                r.getId()
+                r.getZoneId(), r.getStartTime(), r.getEndTime(), now, r.getId()
         );
 
         if (overlaps >= zone.getCapacityCompanies()) {
@@ -96,6 +113,8 @@ public class ZoneService {
         }
 
         r.setStatus(ZoneReservationStatus.ACTIVE);
+        // можно обнулить expiresAt, чтобы не путаться
+        r.setExpiresAt(null);
         zoneReservationRepository.save(r);
     }
 
@@ -111,10 +130,11 @@ public class ZoneService {
         }
 
         if (r.getStatus() == ZoneReservationStatus.CANCELLED) {
-            return;
+            return; // идемпотентно
         }
 
         r.setStatus(ZoneReservationStatus.CANCELLED);
+        r.setExpiresAt(null);
         zoneReservationRepository.save(r);
     }
 
@@ -152,11 +172,12 @@ public class ZoneService {
                 .orElseThrow(() -> NotFoundException.of("ZONE_NOT_FOUND", "Zone not found",
                         Map.of("zoneId", base.getZoneId())));
 
+        OffsetDateTime now = OffsetDateTime.now();
         long overlaps = zoneReservationRepository.countOverlaps(
                 base.getZoneId(),
-                base.getEndTime(),  // extend interval starts from old end
+                base.getEndTime(),
                 targetEnd,
-                List.of(ZoneReservationStatus.ACTIVE, ZoneReservationStatus.HOLD),
+                now,
                 null
         );
 
@@ -172,8 +193,9 @@ public class ZoneService {
                 base.getEndTime(),
                 targetEnd,
                 ZoneReservationStatus.ACTIVE,
-                OffsetDateTime.now(),
-                base.getId()
+                now,
+                base.getId(), // parentReservationId
+                null          // expiresAt
         );
 
         zoneReservationRepository.save(ext);

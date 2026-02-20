@@ -8,10 +8,27 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiError> handleAny(Exception ex) {
+        String errorId = UUID.randomUUID().toString();
+        log.error("Unhandled errorId={}", errorId, ex); // <-- stacktrace появится
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ApiError(
+                        "INTERNAL_ERROR",
+                        "Unexpected error",
+                        Map.of("errorId", errorId)
+                ));
+    }
 
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiError> handleBusiness(BusinessException ex) {
@@ -41,9 +58,9 @@ public class GlobalExceptionHandler {
                 .body(new ApiError("VALIDATION_ERROR", "Validation failed", Map.of("error", ex.getMessage())));
     }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiError> handleOther(Exception ex) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ApiError("INTERNAL_ERROR", "Unexpected error", Map.of()));
-    }
+//    @ExceptionHandler(Exception.class)
+//    public ResponseEntity<ApiError> handleOther(Exception ex) {
+//        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+//                .body(new ApiError("INTERNAL_ERROR", "Unexpected error", Map.of()));
+//    }
 }

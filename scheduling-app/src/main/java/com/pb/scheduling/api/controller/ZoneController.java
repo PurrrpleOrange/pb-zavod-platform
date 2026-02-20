@@ -3,6 +3,7 @@ package com.pb.scheduling.api.controller;
 import com.pb.scheduling.api.dto.request.ConfirmByBookingRequest;
 import com.pb.scheduling.api.dto.request.ExtendZoneRequest;
 import com.pb.scheduling.api.dto.request.HoldZoneRequest;
+import com.pb.scheduling.api.dto.response.HoldZoneResponse;
 import com.pb.scheduling.service.ZoneService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,11 +21,15 @@ public class ZoneController {
 
     @PostMapping("/zones/{zoneId}/holds")
     @ResponseStatus(HttpStatus.CREATED)
-    public Map<String, Object> hold(
+    public HoldZoneResponse hold(
             @PathVariable("zoneId") UUID zoneId,
             @Valid @RequestBody HoldZoneRequest req) {
-        UUID id = zoneService.holdZone(zoneId, req.getBookingId(), req.getStartTime(), req.getEndTime());
-        return Map.of("zoneReservationId", id);
+        return zoneService.holdZone(
+            zoneId,
+            req.getBookingId(),
+            req.getStartTime(),
+            req.getEndTime(),
+            req.getHoldMinutes());
     }
 
     @PostMapping("/zone-holds/{zoneReservationId}/confirm")
@@ -45,10 +50,13 @@ public class ZoneController {
 
     @PostMapping("/zone-reservations/{zoneReservationId}/extend")
     @ResponseStatus(HttpStatus.CREATED)
-    public Map<String, Object> extend(@PathVariable("zoneReservationId") UUID zoneReservationId,
-                                      @Valid @RequestBody ExtendZoneRequest req,
-                                      @RequestParam UUID bookingId) {
-        UUID id = zoneService.extend(zoneReservationId, bookingId, req.getNewEndTime(), req.getExtendMinutes());
-        return Map.of("zoneReservationId", id);
+    public UUID extend(@PathVariable("zoneReservationId") UUID zoneReservationId,
+                       @Valid @RequestBody ExtendZoneRequest req) {
+        return zoneService.extend(
+                zoneReservationId,
+                req.getBookingId(),
+                req.getNewEndTime(),
+                req.getExtendMinutes()
+        );
     }
 }
