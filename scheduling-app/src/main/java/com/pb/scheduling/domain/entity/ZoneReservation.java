@@ -38,4 +38,7 @@ public class ZoneReservation {
 
     @Column(name = "parent_reservation_id")
     private UUID parentReservationId;
+
+    @Column(name = "expires_at")
+    private OffsetDateTime expiresAt;
 }

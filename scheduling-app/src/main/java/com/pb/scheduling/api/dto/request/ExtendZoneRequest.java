@@ -4,12 +4,12 @@ import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 @Data
 public class ExtendZoneRequest {
-    // либо newEndTime, либо extendMinutes
+    private UUID bookingId;
     private OffsetDateTime newEndTime;
-
-    @Positive
     private Integer extendMinutes;
 }
+
