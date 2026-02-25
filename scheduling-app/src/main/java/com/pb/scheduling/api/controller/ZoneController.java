@@ -25,10 +25,9 @@ public class ZoneController {
             @PathVariable("zoneId") UUID zoneId,
             @Valid @RequestBody HoldZoneRequest req) {
         return zoneService.holdZone(
-            zoneId,
-            req.getBookingId(),
-            req.getStartTime(),
-            req.getEndTime());
+                zoneId,
+                req.getBookingId(),
+                req.getSlotReservationId());
     }
 
     @PostMapping("/zone-holds/{zoneReservationId}/confirm")
@@ -54,7 +53,6 @@ public class ZoneController {
         return zoneService.extend(
                 zoneReservationId,
                 req.getBookingId(),
-                req.getNewEndTime(),
                 req.getExtendMinutes()
         );
     }

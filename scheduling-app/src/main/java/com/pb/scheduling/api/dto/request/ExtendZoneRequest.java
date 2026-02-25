@@ -9,7 +9,6 @@ import java.util.UUID;
 @Data
 public class ExtendZoneRequest {
     private UUID bookingId;
-    private OffsetDateTime newEndTime;
     private Integer extendMinutes;
 }
 

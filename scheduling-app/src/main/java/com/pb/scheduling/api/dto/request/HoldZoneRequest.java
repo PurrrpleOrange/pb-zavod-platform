@@ -16,8 +16,5 @@ public class HoldZoneRequest {
     private UUID bookingId;
 
     @NotNull
-    private OffsetDateTime startTime;
-
-    @NotNull
-    private OffsetDateTime endTime;
+    private UUID slotReservationId;
 }
