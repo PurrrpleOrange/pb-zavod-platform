@@ -20,13 +20,4 @@ public class HoldZoneRequest {
 
     @NotNull
     private OffsetDateTime endTime;
-
-    @NotNull
-    private Integer holdMinutes = 15;
-
-    HoldZoneRequest(UUID bookingId, OffsetDateTime startTime, OffsetDateTime endTime) {
-        this.bookingId = bookingId;
-        this.startTime = startTime;
-        this.endTime = endTime;
-    }
 }

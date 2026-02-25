@@ -1,6 +1,7 @@
 package com.pb.scheduling.service;
 
 import com.pb.scheduling.api.dto.response.HoldZoneResponse;
+import com.pb.scheduling.config.SchedulingProperties;
 import com.pb.scheduling.domain.entity.Zone;
 import com.pb.scheduling.domain.entity.ZoneReservation;
 import com.pb.scheduling.domain.enums.ZoneReservationStatus;
@@ -22,13 +23,13 @@ public class ZoneService {
 
     private final ZoneRepository zoneRepository;
     private final ZoneReservationRepository zoneReservationRepository;
+    private final SchedulingProperties schedulingProperties;
 
     @Transactional
     public HoldZoneResponse holdZone(UUID zoneId,
                                      UUID bookingId,
                                      OffsetDateTime start,
-                                     OffsetDateTime end,
-                                     int holdMinutes) {
+                                     OffsetDateTime end) {
 
         if (start == null || end == null) {
             throw BusinessException.of("INVALID_TIME", "startTime/endTime must be provided",
@@ -49,7 +50,7 @@ public class ZoneService {
         }
 
         OffsetDateTime now = OffsetDateTime.now();
-        OffsetDateTime expiresAt = now.plusMinutes(Math.max(1, holdMinutes));
+        OffsetDateTime expiresAt = now.plusMinutes(Math.max(1, schedulingProperties.holdMinutes()));
 
         long overlaps = zoneReservationRepository.countOverlaps(
                 zoneId, start, end, now, null
