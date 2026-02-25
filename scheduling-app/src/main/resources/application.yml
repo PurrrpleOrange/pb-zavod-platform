@@ -7,6 +7,7 @@ server:
 
 pb:
   scheduling:
+    hold-cleanup-interval-ms: 60000
     hold-minutes: 15 # default hold minutes for SlotReservation
     default-duration-minutes_for_zones: 180 # default duration minutes for ZoneReservation
 
