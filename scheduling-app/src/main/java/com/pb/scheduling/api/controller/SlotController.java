@@ -6,6 +6,7 @@ import com.pb.scheduling.api.dto.response.HoldSlotResponse;
 import com.pb.scheduling.domain.entity.GameSlot;
 import com.pb.scheduling.domain.entity.SlotReservation;
 import com.pb.scheduling.service.SlotService;
+import com.pb.scheduling.service.ZoneService;
 import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import java.util.UUID;
 public class SlotController {
 
     private final SlotService slotService;
+    private final ZoneService zoneService;
 
     @GetMapping("/slots/getAll")
     public List<GameSlot> getAllGameSlots() {

@@ -8,6 +8,7 @@ server:
 pb:
   scheduling:
     hold-minutes: 15 # default hold minutes for SlotReservation
+    default-duration-minutes_for_zones: 180 # default duration minutes for ZoneReservation
 
 spring:
   datasource:

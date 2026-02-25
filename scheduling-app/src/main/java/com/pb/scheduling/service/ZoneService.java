@@ -2,11 +2,15 @@ package com.pb.scheduling.service;
 
 import com.pb.scheduling.api.dto.response.HoldZoneResponse;
 import com.pb.scheduling.config.SchedulingProperties;
+import com.pb.scheduling.domain.entity.GameSlot;
+import com.pb.scheduling.domain.entity.SlotReservation;
 import com.pb.scheduling.domain.entity.Zone;
 import com.pb.scheduling.domain.entity.ZoneReservation;
 import com.pb.scheduling.domain.enums.ZoneReservationStatus;
 import com.pb.scheduling.exception.BusinessException;
 import com.pb.scheduling.exception.NotFoundException;
+import com.pb.scheduling.repository.GameSlotRepository;
+import com.pb.scheduling.repository.SlotReservationRepository;
 import com.pb.scheduling.repository.ZoneRepository;
 import com.pb.scheduling.repository.ZoneReservationRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -22,34 +27,52 @@ import java.util.UUID;
 public class ZoneService {
 
     private final ZoneRepository zoneRepository;
+    private final SlotReservationRepository slotReservationRepository;
     private final ZoneReservationRepository zoneReservationRepository;
+    private final GameSlotRepository gameSlotRepository;
     private final SchedulingProperties schedulingProperties;
 
     @Transactional
     public HoldZoneResponse holdZone(UUID zoneId,
                                      UUID bookingId,
-                                     OffsetDateTime start,
-                                     OffsetDateTime end) {
-
-        if (start == null || end == null) {
-            throw BusinessException.of("INVALID_TIME", "startTime/endTime must be provided",
-                    Map.of("startTime", start, "endTime", end));
-        }
-        if (!end.isAfter(start)) {
-            throw BusinessException.of("INVALID_TIME", "endTime must be after startTime",
-                    Map.of("startTime", start, "endTime", end));
-        }
-
+                                     UUID slotReservationId) {
+        // проверяем, что zone существует
         Zone zone = zoneRepository.findByIdForUpdate(zoneId)
                 .orElseThrow(() -> NotFoundException.of(
                         "ZONE_NOT_FOUND", "Zone not found", Map.of("zoneId", zoneId)
                 ));
 
+        SlotReservation slotReservation = slotReservationRepository.findByIdLocked(slotReservationId)
+                .orElseThrow(() -> NotFoundException.of(
+                        "SLOT_RES_NOT_FOUND", "Slot reservation not found", Map.of("slotReservationId", slotReservationId)
+                ));
+
+        // проверяем, что zone активна
         if (!zone.isActive()) {
             throw BusinessException.of("ZONE_INACTIVE", "Zone is inactive", Map.of("zoneId", zoneId));
         }
 
+        // проверяем, что game slot ещё не закончился
+        Optional<GameSlot> gameSlot = gameSlotRepository.findByIdForUpdate(slotReservation.getGameSlotId());
+        if (gameSlot.isEmpty()) {
+            throw NotFoundException.of(
+                    "GAME_SLOT_NOT_FOUND", "Game slot not found", Map.of("gameSlotId", slotReservation.getGameSlotId())
+            );
+        }
         OffsetDateTime now = OffsetDateTime.now();
+        if(!gameSlot.get().getEndTime().isAfter(now)) {
+            throw BusinessException.of(
+                    "SLOT_ALREADY_FINISHED",
+                    "game slot already finished",
+                    Map.of(
+                            "slotId", gameSlot.get().getId(),
+                            "endTime", gameSlot.get().getEndTime()
+                    )
+            );
+        }
+
+        OffsetDateTime start = gameSlot.get().getStartTime();
+        OffsetDateTime end = start.plusMinutes(Math.max(1, schedulingProperties.defaultDurationMinutesForZones()));
         OffsetDateTime expiresAt = now.plusMinutes(Math.max(1, schedulingProperties.holdMinutes()));
 
         long overlaps = zoneReservationRepository.countOverlaps(
@@ -68,9 +91,9 @@ public class ZoneService {
                 start,
                 end,
                 ZoneReservationStatus.HOLD,
-                now,
                 null,      // parentReservationId
-                expiresAt  // expiresAt
+                expiresAt,  // expiresAt
+                slotReservationId
         );
 
         zoneReservationRepository.save(r);
@@ -140,7 +163,7 @@ public class ZoneService {
     }
 
     @Transactional
-    public UUID extend(UUID zoneReservationId, UUID bookingId, OffsetDateTime newEndTime, Integer extendMinutes) {
+    public UUID extend(UUID zoneReservationId, UUID bookingId, Integer extendMinutes) {
         ZoneReservation base = zoneReservationRepository.findByIdForUpdate(zoneReservationId)
                 .orElseThrow(() -> NotFoundException.of("ZONE_RES_NOT_FOUND", "Zone reservation not found",
                         Map.of("zoneReservationId", zoneReservationId)));
@@ -156,12 +179,10 @@ public class ZoneService {
         }
 
         OffsetDateTime targetEnd;
-        if (newEndTime != null) {
-            targetEnd = newEndTime;
-        } else if (extendMinutes != null) {
+        if (extendMinutes != null) {
             targetEnd = base.getEndTime().plusMinutes(extendMinutes);
         } else {
-            throw BusinessException.of("INVALID_REQUEST", "Provide newEndTime or extendMinutes", Map.of());
+            throw BusinessException.of("INVALID_REQUEST", "Provide extendMinutes", Map.of());
         }
 
         if (!targetEnd.isAfter(base.getEndTime())) {
@@ -196,7 +217,8 @@ public class ZoneService {
                 ZoneReservationStatus.ACTIVE,
                 now,
                 base.getId(), // parentReservationId
-                null          // expiresAt
+                null,          // expiresAt
+                base.getSlotReservationId()
         );
 
         zoneReservationRepository.save(ext);
