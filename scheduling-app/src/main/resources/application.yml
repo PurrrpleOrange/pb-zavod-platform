@@ -5,6 +5,10 @@ server:
     include-binding-errors: always
     include-stacktrace: always
 
+pb:
+  scheduling:
+    hold-minutes: 15 # default hold minutes for SlotReservation
+
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5433/pb_scheduling

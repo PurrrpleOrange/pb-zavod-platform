@@ -28,8 +28,7 @@ public class ZoneController {
             zoneId,
             req.getBookingId(),
             req.getStartTime(),
-            req.getEndTime(),
-            req.getHoldMinutes());
+            req.getEndTime());
     }
 
     @PostMapping("/zone-holds/{zoneReservationId}/confirm")

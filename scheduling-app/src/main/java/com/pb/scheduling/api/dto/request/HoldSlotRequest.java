@@ -10,7 +10,4 @@ import java.util.UUID;
 public class HoldSlotRequest {
     @NotNull
     private UUID bookingId;
-
-    @Positive
-    private Integer holdMinutes = 15;
 }

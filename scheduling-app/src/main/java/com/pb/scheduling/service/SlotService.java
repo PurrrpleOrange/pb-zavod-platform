@@ -1,6 +1,7 @@
 package com.pb.scheduling.service;
 
 import com.pb.scheduling.api.dto.response.HoldSlotResponse;
+import com.pb.scheduling.config.SchedulingProperties;
 import com.pb.scheduling.domain.entity.GameSlot;
 import com.pb.scheduling.domain.entity.SlotReservation;
 import com.pb.scheduling.domain.enums.GameSlotStatus;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -23,9 +25,18 @@ public class SlotService {
 
     private final GameSlotRepository gameSlotRepository;
     private final SlotReservationRepository slotReservationRepository;
+    private final SchedulingProperties schedulingProperties;
+
+    public List<GameSlot> getAllGameSlots() {
+        return gameSlotRepository.findAll();
+    }
+
+    public List<SlotReservation> getAllSlotReservations() {
+        return slotReservationRepository.findAll();
+    }
 
     @Transactional
-    public HoldSlotResponse holdSlot(UUID slotId, UUID bookingId, int holdMinutes) {
+    public HoldSlotResponse holdSlot(UUID slotId, UUID bookingId) {
         GameSlot slot = gameSlotRepository.findByIdForUpdate(slotId)
                 .orElseThrow(() -> NotFoundException.of(
                         "SLOT_NOT_FOUND",
@@ -43,7 +54,7 @@ public class SlotService {
             throw BusinessException.of("SLOT_FULL", "No capacity for slot", Map.of("slotId", slotId));
         }
 
-        OffsetDateTime expiresAt = now.plusMinutes(Math.max(1, holdMinutes));
+        OffsetDateTime expiresAt = now.plusMinutes(Math.max(1, schedulingProperties.holdMinutes()));
 
         SlotReservation r = new SlotReservation(
                 UUID.randomUUID(),
