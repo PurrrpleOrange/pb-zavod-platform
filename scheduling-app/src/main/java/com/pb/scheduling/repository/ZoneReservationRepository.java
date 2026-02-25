@@ -39,4 +39,14 @@ public interface ZoneReservationRepository extends JpaRepository<ZoneReservation
                        @Param("endTime") OffsetDateTime endTime,
                        @Param("now") OffsetDateTime now,
                        @Param("excludeId") UUID excludeId);
+
+    @Modifying
+    @Query("""
+    update ZoneReservation r
+    set r.status = com.pb.scheduling.domain.enums.ZoneReservationStatus.CANCELLED,
+        r.expiresAt = null
+    where r.status = com.pb.scheduling.domain.enums.ZoneReservationStatus.HOLD
+    and r.expiresAt <= :now
+""")
+    int cancelExpiredHolds(@Param("now") OffsetDateTime now);
 }

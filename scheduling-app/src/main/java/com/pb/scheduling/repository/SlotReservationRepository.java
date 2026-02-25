@@ -33,4 +33,14 @@ public interface SlotReservationRepository extends JpaRepository<SlotReservation
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select r from SlotReservation r where r.id = :id")
     Optional<SlotReservation> findByIdLocked(@Param("id")UUID id);
+
+    @Modifying
+    @Query("""
+    update SlotReservation r
+    set r.status = com.pb.scheduling.domain.enums.SlotReservationStatus.CANCELLED,
+        r.expiresAt = null
+    where r.status = com.pb.scheduling.domain.enums.SlotReservationStatus.HOLD
+    and r.expiresAt <= :now
+""")
+    int cancelExpiredHolds(@Param("now") OffsetDateTime now);
 }

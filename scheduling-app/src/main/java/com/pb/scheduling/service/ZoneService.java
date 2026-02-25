@@ -6,6 +6,7 @@ import com.pb.scheduling.domain.entity.GameSlot;
 import com.pb.scheduling.domain.entity.SlotReservation;
 import com.pb.scheduling.domain.entity.Zone;
 import com.pb.scheduling.domain.entity.ZoneReservation;
+import com.pb.scheduling.domain.enums.SlotReservationStatus;
 import com.pb.scheduling.domain.enums.ZoneReservationStatus;
 import com.pb.scheduling.exception.BusinessException;
 import com.pb.scheduling.exception.NotFoundException;
@@ -47,6 +48,25 @@ public class ZoneService {
                         "SLOT_RES_NOT_FOUND", "Slot reservation not found", Map.of("slotReservationId", slotReservationId)
                 ));
 
+        // проверяем, что bookingId совпадает
+        if(!slotReservation.getBookingId().equals(bookingId)) {
+            throw BusinessException.of("BOOKING_MISMATCH", "bookingId mismatch",
+                    Map.of("slotReservationId", slotReservationId));
+        }
+
+        // проверяем, что статус slot reservation - HOLD или CONFIRMED
+        if(slotReservation.getStatus()!= SlotReservationStatus.HOLD &&
+                slotReservation.getStatus()!= SlotReservationStatus.CONFIRMED) {
+            throw BusinessException.of("SLOT_RES_STATUS_MISMATCH", "slot reservation status mismatch",
+                    Map.of("slotReservationId", slotReservationId));
+        }
+        OffsetDateTime now = OffsetDateTime.now();
+        if (slotReservation.getStatus() == SlotReservationStatus.HOLD &&
+                (slotReservation.getExpiresAt() == null || !slotReservation.getExpiresAt().isAfter(now))) {
+            throw BusinessException.of("SLOT_HOLD_EXPIRED", "Slot hold expired",
+                    Map.of("slotReservationId", slotReservationId, "expiresAt", slotReservation.getExpiresAt()));
+        }
+
         // проверяем, что zone активна
         if (!zone.isActive()) {
             throw BusinessException.of("ZONE_INACTIVE", "Zone is inactive", Map.of("zoneId", zoneId));
@@ -59,7 +79,6 @@ public class ZoneService {
                     "GAME_SLOT_NOT_FOUND", "Game slot not found", Map.of("gameSlotId", slotReservation.getGameSlotId())
             );
         }
-        OffsetDateTime now = OffsetDateTime.now();
         if(!gameSlot.get().getEndTime().isAfter(now)) {
             throw BusinessException.of(
                     "SLOT_ALREADY_FINISHED",
