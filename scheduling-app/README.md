@@ -1,4 +1,4 @@
-﻿# scheduling-service
+﻿````# scheduling-service
 
 Сервис планирования ресурсов клуба: игровые слоты (площадки) и зоны (раздевалка/беседки и т.п.).
 Отвечает за **временные интервалы**, **вместимость (по компаниям)** и **конфликты**.
@@ -177,4 +177,4 @@ mvn -pl scheduling-app spring-boot:run
 - Observability:
   - structured logs
   - metrics
-- API docs via OpenAPI/Swagger
+- API docs via OpenAPI/Swagger````
