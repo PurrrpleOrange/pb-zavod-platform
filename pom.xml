@@ -16,6 +16,7 @@
         <module>booking-app</module>
         <module>catalog-app</module>
         <module>sales-app</module>
+        <module>auth-service</module>
     </modules>
 
     <properties>
