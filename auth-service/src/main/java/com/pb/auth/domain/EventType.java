@@ -1,0 +1,15 @@
+package com.pb.auth.domain;
+
+public enum EventType {
+    LOGIN_SUCCESS,
+    LOGIN_FAILED,
+    REFRESH_SUCCESS,
+    REFRESH_REUSED,
+    LOGOUT,
+    PASSWORD_CHANGED,
+    USER_CREATED,
+    USER_UPDATED,
+    USER_DISABLED,
+    ROLE_GRANTED,
+    ROLE_REVOKED
+}
