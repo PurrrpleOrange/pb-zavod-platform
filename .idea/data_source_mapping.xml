@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DataSourcePerFileMappings">
+    <file url="file://$PROJECT_DIR$/booking-app/src/main/resources/db/migration/V2__create_client.sql" value="fef9c854-d6ed-4e48-a56c-2fef29be9fb9" />
+  </component>
+</project>
