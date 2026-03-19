@@ -12,7 +12,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>booking-app</artifactId>
+    <artifactId>catalog-app</artifactId>
     <packaging>jar</packaging>
 
     <dependencies>
