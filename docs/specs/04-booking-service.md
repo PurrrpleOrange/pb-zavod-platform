@@ -29,6 +29,29 @@
 - `GET /bookings/{id}`
 - `GET /bookings`
 
+### 3.1 Клиенты (временный CRUD, до появления CRM-сервиса)
+- `POST /clients` — создание клиента
+- `PATCH /clients/{id}` — обновление клиента
+- `GET /clients/{id}` — получение по ID
+- `GET /clients` — список с пагинацией
+
+## 3.2 Таблица `client`
+Временная таблица в схеме `booking`, пока нет отдельного CRM-сервиса.
+При создании брони `client_id` валидируется по FK.
+
+| Поле | Тип | Обязательность | Описание |
+|------|-----|----------------|----------|
+| `client_id` | UUID PK | auto | gen_random_uuid() |
+| `name` | VARCHAR(255) | обязательно | Имя клиента |
+| `phone` | VARCHAR(20) | опционально | Номер телефона |
+| `email` | VARCHAR(255) | опционально | Email |
+| `visit_count` | INT | auto | Количество завершённых визитов (default: 0) |
+| `created_at` | TIMESTAMPTZ | auto | Дата создания |
+| `updated_at` | TIMESTAMPTZ | auto | Дата обновления |
+
+> **Миграция**: когда появится CRM-сервис (02-client-management-service), данные из этой таблицы
+> переносятся в CRM, FK убирается, а валидация `client_id` заменяется на HTTP-вызов.
+
 ## 4. Полная валидация
 - clientId обязателен
 - gameSlotId обязателен
