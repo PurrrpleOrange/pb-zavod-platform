@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -E \"\\\\.md$|\\\\.txt$\")",
+      "Bash(./mvnw compile:*)",
+      "Bash(ls *.cmd .mvn/)",
+      "Bash(mvn compile:*)",
+      "Bash(JAVA_HOME=\"/c/Program Files/Eclipse Adoptium/jdk-17.0.15.6-hotspot\" mvn compile -Dmaven.compiler.release=17 -q)",
+      "Bash(PGPASSWORD=pb psql -h localhost -p 5433 -U pb -d pb_auth -c \"DROP SCHEMA IF EXISTS auth CASCADE;\" 2>&1)"
+    ]
+  }
+}
