@@ -1,6 +1,10 @@
 package com.pb.scheduling.service;
 
+import com.pb.scheduling.api.dto.request.CreateZoneRequest;
+import com.pb.scheduling.api.dto.request.UpdateZoneRequest;
 import com.pb.scheduling.api.dto.response.HoldZoneResponse;
+import com.pb.scheduling.api.dto.response.ZoneReservationResponse;
+import com.pb.scheduling.api.dto.response.ZoneResponse;
 import com.pb.scheduling.config.SchedulingProperties;
 import com.pb.scheduling.domain.entity.GameSlot;
 import com.pb.scheduling.domain.entity.SlotReservation;
@@ -19,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -32,6 +37,108 @@ public class ZoneService {
     private final ZoneReservationRepository zoneReservationRepository;
     private final GameSlotRepository gameSlotRepository;
     private final SchedulingProperties schedulingProperties;
+
+    // ── CRUD ──────────────────────────────────────────────────────────────────
+
+    @Transactional
+    public ZoneResponse createZone(CreateZoneRequest req) {
+        if (zoneRepository.existsByCode(req.getCode())) {
+            throw BusinessException.of("ZONE_CODE_DUPLICATE",
+                    "Zone with code '" + req.getCode() + "' already exists");
+        }
+        Zone zone = new Zone(
+                UUID.randomUUID(),
+                req.getCode(),
+                req.getName(),
+                req.getType(),
+                req.getCapacityCompanies(),
+                req.isPaid(),
+                true
+        );
+        return toResponse(zoneRepository.save(zone));
+    }
+
+    @Transactional(readOnly = true)
+    public List<ZoneResponse> getAllZones(Boolean active) {
+        List<Zone> zones = active != null
+                ? zoneRepository.findByActive(active)
+                : zoneRepository.findAll();
+        return zones.stream().map(this::toResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public ZoneResponse getZone(UUID zoneId) {
+        return toResponse(findOrThrow(zoneId));
+    }
+
+    @Transactional
+    public ZoneResponse updateZone(UUID zoneId, UpdateZoneRequest req) {
+        Zone zone = findOrThrow(zoneId);
+        if (req.getName() != null) zone.setName(req.getName());
+        if (req.getType() != null) zone.setType(req.getType());
+        if (req.getCapacityCompanies() != null) zone.setCapacityCompanies(req.getCapacityCompanies());
+        if (req.getPaid() != null) zone.setPaid(req.getPaid());
+        if (req.getActive() != null) zone.setActive(req.getActive());
+        return toResponse(zoneRepository.save(zone));
+    }
+
+    @Transactional
+    public void deactivateZone(UUID zoneId) {
+        Zone zone = findOrThrow(zoneId);
+        zone.setActive(false);
+        zoneRepository.save(zone);
+    }
+
+    private Zone findOrThrow(UUID zoneId) {
+        return zoneRepository.findById(zoneId)
+                .orElseThrow(() -> NotFoundException.of(
+                        "ZONE_NOT_FOUND", "Zone not found", Map.of("zoneId", zoneId)));
+    }
+
+    private ZoneResponse toResponse(Zone zone) {
+        return ZoneResponse.builder()
+                .id(zone.getId())
+                .code(zone.getCode())
+                .name(zone.getName())
+                .type(zone.getType())
+                .capacityCompanies(zone.getCapacityCompanies())
+                .paid(zone.isPaid())
+                .active(zone.isActive())
+                .build();
+    }
+
+    // ── ZONE RESERVATIONS READ ────────────────────────────────────────────────
+
+    @Transactional(readOnly = true)
+    public ZoneReservationResponse getZoneReservation(UUID zoneReservationId) {
+        ZoneReservation r = zoneReservationRepository.findById(zoneReservationId)
+                .orElseThrow(() -> NotFoundException.of("ZONE_RES_NOT_FOUND", "Zone reservation not found",
+                        Map.of("zoneReservationId", zoneReservationId)));
+        return toReservationResponse(r);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ZoneReservationResponse> listZoneReservations(UUID zoneId, UUID bookingId, ZoneReservationStatus status) {
+        return zoneReservationRepository.findAllFiltered(zoneId, bookingId, status)
+                .stream().map(this::toReservationResponse).toList();
+    }
+
+    private ZoneReservationResponse toReservationResponse(ZoneReservation r) {
+        return ZoneReservationResponse.builder()
+                .id(r.getId())
+                .zoneId(r.getZoneId())
+                .bookingId(r.getBookingId())
+                .slotReservationId(r.getSlotReservationId())
+                .parentReservationId(r.getParentReservationId())
+                .startTime(r.getStartTime())
+                .endTime(r.getEndTime())
+                .status(r.getStatus())
+                .expiresAt(r.getExpiresAt())
+                .createdAt(r.getCreatedAt())
+                .build();
+    }
+
+    // ── HOLDS ─────────────────────────────────────────────────────────────────
 
     @Transactional
     public HoldZoneResponse holdZone(UUID zoneId,

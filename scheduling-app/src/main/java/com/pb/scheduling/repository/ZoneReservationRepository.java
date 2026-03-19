@@ -1,11 +1,13 @@
 package com.pb.scheduling.repository;
 
 import com.pb.scheduling.domain.entity.ZoneReservation;
+import com.pb.scheduling.domain.enums.ZoneReservationStatus;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -39,6 +41,17 @@ public interface ZoneReservationRepository extends JpaRepository<ZoneReservation
                        @Param("endTime") OffsetDateTime endTime,
                        @Param("now") OffsetDateTime now,
                        @Param("excludeId") UUID excludeId);
+
+    @Query("""
+        select r from ZoneReservation r
+        where (:zoneId is null or r.zoneId = :zoneId)
+          and (:bookingId is null or r.bookingId = :bookingId)
+          and (:status is null or r.status = :status)
+        order by r.createdAt desc
+        """)
+    List<ZoneReservation> findAllFiltered(@Param("zoneId") UUID zoneId,
+                                          @Param("bookingId") UUID bookingId,
+                                          @Param("status") ZoneReservationStatus status);
 
     @Modifying
     @Query("""

@@ -36,6 +36,8 @@ public class GlobalExceptionHandler {
                 ? HttpStatus.NOT_FOUND
                 : HttpStatus.BAD_REQUEST;
 
+        log.warn("Business error [{}]: {} details={}", ex.getCode(), ex.getMessage(), ex.getDetails());
+
         return ResponseEntity.status(status)
                 .body(new ApiError(ex.getCode(), ex.getMessage(), ex.getDetails()));
     }
