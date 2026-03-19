@@ -29,12 +29,37 @@
 - `zone_reservation.status`: `HOLD`, `ACTIVE`, `CANCELLED`, `FINISHED`, `EXPIRED`
 
 ## 4. API
+
+### Zones CRUD
+| Метод | Путь | Описание |
+|-------|------|----------|
+| `POST` | `/zones` | Создание зоны |
+| `GET` | `/zones` | Список зон (`?active=true/false`) |
+| `GET` | `/zones/{zoneId}` | Получение зоны по ID |
+| `PATCH` | `/zones/{zoneId}` | Обновление зоны |
+| `DELETE` | `/zones/{zoneId}` | Деактивация зоны (soft delete) |
+
+**Поля зоны:**
+
+| Поле | Тип | Обязательность | Описание |
+|------|-----|----------------|----------|
+| `code` | VARCHAR | обязательно (уникальный) | Короткий идентификатор зоны |
+| `name` | VARCHAR | обязательно | Отображаемое имя |
+| `type` | ENUM | обязательно | `REST` или `DRESSING` |
+| `capacityCompanies` | INT | обязательно, > 0 | Сколько компаний может занимать зону одновременно |
+| `paid` | BOOLEAN | опционально | Является ли зона платной (default: `true`) |
+| `active` | BOOLEAN | auto | Активна ли зона (default: `true`) |
+
+> `DELETE` не удаляет запись физически — выставляет `active = false`. Существующие брони не затрагиваются.
+
+### Slots & Holds (существующее)
 - Arenas: `GET/POST/PATCH /arenas`
 - Slots: `GET/POST/PATCH /slots`
 - Holds: `POST /slots/{slotId}/holds`
 - Confirm: `POST /slot-holds/{id}/confirm`
 - Cancel: `POST /slot-holds/{id}/cancel`
-- Zones аналогично
+- Zone holds: `POST /zones/{zoneId}/holds`
+- Zone confirm/cancel: `POST /zone-holds/{id}/confirm|cancel`
 - Extend: `POST /zone-reservations/{id}/extend`
 
 ## 5. Полная валидация
