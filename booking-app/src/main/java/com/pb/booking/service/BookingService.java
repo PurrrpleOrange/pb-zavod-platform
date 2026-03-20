@@ -4,6 +4,7 @@ import com.pb.booking.api.dto.request.CancelBookingRequest;
 import com.pb.booking.api.dto.request.ConfirmBookingRequest;
 import com.pb.booking.api.dto.request.RecordPrepaymentRequest;
 import com.pb.booking.api.dto.request.SubmitBookingRequest;
+import com.pb.booking.api.dto.request.UpdateBookingRequest;
 import com.pb.booking.client.SchedulingClient;
 import com.pb.booking.client.dto.HoldSlotResponse;
 import com.pb.booking.client.dto.HoldZoneResponse;
@@ -294,6 +295,20 @@ public class BookingService {
         booking = bookingRepository.save(booking);
         log.info("Booking cancelled: id={}, status={}, reason={}", bookingId, newStatus, booking.getCancelReason());
         return booking;
+    }
+
+    @Transactional
+    public Booking updateBooking(UUID bookingId, UpdateBookingRequest request) {
+        Booking booking = findBookingOrThrow(bookingId);
+
+        if (request.getPlayersCount() != null) booking.setPlayersCount(request.getPlayersCount());
+        if (request.getDesiredDate() != null) booking.setDesiredDate(request.getDesiredDate());
+        if (request.getTariffId() != null) booking.setTariffId(request.getTariffId());
+        if (request.getTotalPriceSnapshot() != null) booking.setTotalPriceSnapshot(request.getTotalPriceSnapshot());
+        if (request.getExtraEquipmentCount() != null) booking.setExtraEquipmentCount(request.getExtraEquipmentCount());
+        if (request.getAdminNotes() != null) booking.setAdminNotes(request.getAdminNotes());
+
+        return bookingRepository.save(booking);
     }
 
     @Transactional(readOnly = true)

@@ -4,6 +4,7 @@ import com.pb.booking.api.dto.request.CancelBookingRequest;
 import com.pb.booking.api.dto.request.ConfirmBookingRequest;
 import com.pb.booking.api.dto.request.RecordPrepaymentRequest;
 import com.pb.booking.api.dto.request.SubmitBookingRequest;
+import com.pb.booking.api.dto.request.UpdateBookingRequest;
 import com.pb.booking.api.dto.response.BookingResponse;
 import com.pb.booking.domain.entity.Booking;
 import com.pb.booking.domain.enums.BookingStatus;
@@ -73,6 +74,14 @@ public class BookingController {
     @PostMapping("/{id}/no-show")
     public ResponseEntity<BookingResponse> noShowBooking(@PathVariable("id") UUID id) {
         Booking booking = bookingService.noShowBooking(id);
+        return ResponseEntity.ok(bookingMapper.toResponse(booking));
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<BookingResponse> updateBooking(
+            @PathVariable("id") UUID id,
+            @Valid @RequestBody UpdateBookingRequest request) {
+        Booking booking = bookingService.updateBooking(id, request);
         return ResponseEntity.ok(bookingMapper.toResponse(booking));
     }
 
