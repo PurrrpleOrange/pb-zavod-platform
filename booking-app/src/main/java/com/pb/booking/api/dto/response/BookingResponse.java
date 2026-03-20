@@ -5,6 +5,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Data
@@ -21,6 +22,11 @@ public class BookingResponse {
     private UUID slotReservationId;
     private UUID zoneReservationId;
     private String cancelReason;
+    private LocalDate desiredDate;
+    private Integer extraEquipmentCount;
+    private BigDecimal prepaidAmount;
+    private String adminNotes;
+    private Instant holdExpiresAt;
     private Instant createdAt;
     private Instant updatedAt;
 }

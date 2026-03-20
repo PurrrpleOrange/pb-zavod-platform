@@ -19,6 +19,11 @@ public class BookingMapper {
                 .slotReservationId(booking.getSlotReservationId())
                 .zoneReservationId(booking.getZoneReservationId())
                 .cancelReason(booking.getCancelReason())
+                .desiredDate(booking.getDesiredDate())
+                .extraEquipmentCount(booking.getExtraEquipmentCount())
+                .prepaidAmount(booking.getPrepaidAmount())
+                .adminNotes(booking.getAdminNotes())
+                .holdExpiresAt(booking.getHoldExpiresAt())
                 .createdAt(booking.getCreatedAt())
                 .updatedAt(booking.getUpdatedAt())
                 .build();
