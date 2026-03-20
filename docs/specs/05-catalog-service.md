@@ -26,7 +26,7 @@
 
 ## 4. Полная валидация
 - тариф привязан к существующему game_type
-- included item: либо quantity_per_player, либо quantity_fixed (или оба, по политике)
+- included item: quantity_per_player
 - product price > 0
 - деактивация запрещена для сущностей в активных ссылках (или soft-policy)
 
