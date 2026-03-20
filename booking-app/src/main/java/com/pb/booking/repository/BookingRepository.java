@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -20,4 +21,6 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     Page<Booking> findByStatus(BookingStatus status, Pageable pageable);
 
     List<Booking> findByClientIdAndStatusIn(UUID clientId, List<BookingStatus> statuses);
+
+    List<Booking> findByStatusAndHoldExpiresAtLessThanEqual(BookingStatus status, Instant now);
 }

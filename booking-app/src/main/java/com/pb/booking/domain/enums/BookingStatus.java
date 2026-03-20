@@ -2,8 +2,11 @@ package com.pb.booking.domain.enums;
 
 public enum BookingStatus {
     HOLD,
+    PREPAID,
     CONFIRMED,
-    CANCELLED,
+    IN_PROGRESS,
     COMPLETED,
-    NO_SHOW
+    NO_SHOW,
+    CANCELLED,
+    CANCELLED_UNPAID
 }

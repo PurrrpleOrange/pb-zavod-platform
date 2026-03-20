@@ -6,6 +6,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
@@ -25,16 +26,16 @@ public class Booking {
     @Column(name = "client_id", nullable = false)
     private UUID clientId;
 
-    @Column(name = "game_slot_id", nullable = false)
+    @Column(name = "game_slot_id")
     private UUID gameSlotId;
 
-    @Column(name = "tariff_id", nullable = false)
+    @Column(name = "tariff_id")
     private UUID tariffId;
 
     @Column(name = "players_count", nullable = false)
     private int playersCount;
 
-    @Column(name = "total_price_snapshot", nullable = false, precision = 12, scale = 2)
+    @Column(name = "total_price_snapshot", precision = 12, scale = 2)
     private BigDecimal totalPriceSnapshot;
 
     @Enumerated(EnumType.STRING)
@@ -49,6 +50,21 @@ public class Booking {
 
     @Column(name = "cancel_reason")
     private String cancelReason;
+
+    @Column(name = "desired_date")
+    private LocalDate desiredDate;
+
+    @Column(name = "extra_equipment_count")
+    private Integer extraEquipmentCount;
+
+    @Column(name = "prepaid_amount", precision = 12, scale = 2)
+    private BigDecimal prepaidAmount;
+
+    @Column(name = "admin_notes")
+    private String adminNotes;
+
+    @Column(name = "hold_expires_at")
+    private Instant holdExpiresAt;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
