@@ -114,4 +114,21 @@ public class SchedulingClient {
                 })
                 .block();
     }
+
+    public void finishZoneChain(UUID zoneReservationId, UUID bookingId) {
+        log.info("Finishing zone chain: zoneReservationId={}, bookingId={}", zoneReservationId, bookingId);
+
+        schedulingWebClient.post()
+                .uri("/zone-reservations/{zoneReservationId}/finish-chain", zoneReservationId)
+                .bodyValue(new ConfirmByBookingRequest(bookingId))
+                .exchangeToMono(response -> {
+                    if (response.statusCode().isError()) {
+                        return response.bodyToMono(String.class).doOnNext(body ->
+                                log.warn("Zone chain finish failed: status={}, body={}", response.statusCode(), body)
+                        ).then();
+                    }
+                    return response.releaseBody();
+                })
+                .block();
+    }
 }
