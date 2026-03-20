@@ -289,6 +289,27 @@ public class ZoneService {
     }
 
     @Transactional
+    public void finishChain(UUID zoneReservationId, UUID bookingId) {
+        ZoneReservation root = zoneReservationRepository.findById(zoneReservationId)
+                .orElseThrow(() -> NotFoundException.of("ZONE_RES_NOT_FOUND", "Zone reservation not found",
+                        Map.of("zoneReservationId", zoneReservationId)));
+
+        if (!root.getBookingId().equals(bookingId)) {
+            throw BusinessException.of("BOOKING_MISMATCH", "bookingId mismatch",
+                    Map.of("zoneReservationId", zoneReservationId));
+        }
+
+        List<ZoneReservation> chain = zoneReservationRepository.findByBookingIdAndZoneId(bookingId, root.getZoneId());
+        for (ZoneReservation res : chain) {
+            if (res.getStatus() == ZoneReservationStatus.ACTIVE || res.getStatus() == ZoneReservationStatus.HOLD) {
+                res.setStatus(ZoneReservationStatus.FINISHED);
+                res.setExpiresAt(null);
+                zoneReservationRepository.save(res);
+            }
+        }
+    }
+
+    @Transactional
     public UUID extend(UUID zoneReservationId, UUID bookingId, Integer extendMinutes) {
         ZoneReservation base = zoneReservationRepository.findByIdForUpdate(zoneReservationId)
                 .orElseThrow(() -> NotFoundException.of("ZONE_RES_NOT_FOUND", "Zone reservation not found",

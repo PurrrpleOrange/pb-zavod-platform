@@ -62,4 +62,6 @@ public interface ZoneReservationRepository extends JpaRepository<ZoneReservation
     and r.expiresAt <= :now
 """)
     int cancelExpiredHolds(@Param("now") OffsetDateTime now);
+
+    List<ZoneReservation> findByBookingIdAndZoneId(UUID bookingId, UUID zoneId);
 }

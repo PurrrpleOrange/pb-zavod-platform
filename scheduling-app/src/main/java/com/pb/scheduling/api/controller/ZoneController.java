@@ -111,4 +111,12 @@ public class ZoneController {
                 req.getExtendMinutes()
         );
     }
+
+    @PostMapping("/zone-reservations/{zoneReservationId}/finish-chain")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void finishChain(
+            @PathVariable("zoneReservationId") UUID zoneReservationId,
+            @Valid @RequestBody ConfirmByBookingRequest req) {
+        zoneService.finishChain(zoneReservationId, req.getBookingId());
+    }
 }
