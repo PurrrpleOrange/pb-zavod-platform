@@ -1,7 +1,9 @@
 package com.pb.booking.api.controller;
 
 import com.pb.booking.api.dto.request.CancelBookingRequest;
-import com.pb.booking.api.dto.request.CreateBookingRequest;
+import com.pb.booking.api.dto.request.ConfirmBookingRequest;
+import com.pb.booking.api.dto.request.RecordPrepaymentRequest;
+import com.pb.booking.api.dto.request.SubmitBookingRequest;
 import com.pb.booking.api.dto.response.BookingResponse;
 import com.pb.booking.domain.entity.Booking;
 import com.pb.booking.domain.enums.BookingStatus;
@@ -27,14 +29,30 @@ public class BookingController {
     private final BookingMapper bookingMapper;
 
     @PostMapping
-    public ResponseEntity<BookingResponse> createBooking(@Valid @RequestBody CreateBookingRequest request) {
-        Booking booking = bookingService.createBooking(request);
+    public ResponseEntity<BookingResponse> submitBooking(@Valid @RequestBody SubmitBookingRequest request) {
+        Booking booking = bookingService.submitBooking(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(bookingMapper.toResponse(booking));
     }
 
+    @PostMapping("/{id}/prepayment")
+    public ResponseEntity<BookingResponse> recordPrepayment(
+            @PathVariable("id") UUID id,
+            @Valid @RequestBody RecordPrepaymentRequest request) {
+        Booking booking = bookingService.recordPrepayment(id, request);
+        return ResponseEntity.ok(bookingMapper.toResponse(booking));
+    }
+
     @PostMapping("/{id}/confirm")
-    public ResponseEntity<BookingResponse> confirmBooking(@PathVariable("id") UUID id) {
-        Booking booking = bookingService.confirmBooking(id);
+    public ResponseEntity<BookingResponse> confirmBooking(
+            @PathVariable("id") UUID id,
+            @RequestBody(required = false) ConfirmBookingRequest request) {
+        Booking booking = bookingService.confirmBooking(id, request);
+        return ResponseEntity.ok(bookingMapper.toResponse(booking));
+    }
+
+    @PostMapping("/{id}/start")
+    public ResponseEntity<BookingResponse> startVisit(@PathVariable("id") UUID id) {
+        Booking booking = bookingService.startVisit(id);
         return ResponseEntity.ok(bookingMapper.toResponse(booking));
     }
 

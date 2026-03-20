@@ -10,4 +10,6 @@ import org.springframework.context.annotation.Configuration;
 public class BookingProperties {
 
     private String schedulingBaseUrl = "http://localhost:8081";
+    private int holdExpiryMinutes = 15;
+    private long expiryCheckIntervalMs = 60000;
 }
