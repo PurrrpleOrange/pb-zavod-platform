@@ -16,5 +16,53 @@ services:
       timeout: 3s
       retries: 20
 
+  auth-service:
+    build:
+      context: .
+      dockerfile: auth-service/Dockerfile
+    container_name: pb-auth
+    ports:
+      - "8086:8086"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/pb_auth
+      SPRING_DATASOURCE_USERNAME: pb
+      SPRING_DATASOURCE_PASSWORD: pb
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  scheduling-app:
+    build:
+      context: .
+      dockerfile: scheduling-app/Dockerfile
+    container_name: pb-scheduling
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/pb_scheduling
+      SPRING_DATASOURCE_USERNAME: pb
+      SPRING_DATASOURCE_PASSWORD: pb
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  booking-app:
+    build:
+      context: .
+      dockerfile: booking-app/Dockerfile
+    container_name: pb-booking
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/pb_booking
+      SPRING_DATASOURCE_USERNAME: pb
+      SPRING_DATASOURCE_PASSWORD: pb
+      PB_BOOKING_SCHEDULING_BASE_URL: http://scheduling-app:8081
+    depends_on:
+      postgres:
+        condition: service_healthy
+      scheduling-app:
+        condition: service_started
+
 volumes:
   pb_pg_data:
