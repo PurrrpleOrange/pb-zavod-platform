@@ -25,4 +25,7 @@ public class UpdateBookingRequest {
 
     private String adminNotes;
     private Boolean exclusive;
+
+    private UUID gameSlotId;
+    private UUID zoneId;
 }
