@@ -32,4 +32,7 @@ public class SlotReservation {
 
     @Column(name = "expires_at")
     private OffsetDateTime expiresAt;
+
+    @Column(name = "is_exclusive", nullable = false)
+    private boolean exclusive;
 }

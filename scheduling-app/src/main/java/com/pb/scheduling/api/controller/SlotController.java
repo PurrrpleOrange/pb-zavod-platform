@@ -38,7 +38,7 @@ public class SlotController {
     public HoldSlotResponse hold(
             @PathVariable("slotId") UUID slotId,
             @Valid @RequestBody HoldSlotRequest req) {
-        return slotService.holdSlot(slotId, req.getBookingId());
+        return slotService.holdSlot(slotId, req.getBookingId(), req.isExclusive());
     }
 
     @PostMapping("/slot-holds/{slotReservationId}/confirm")

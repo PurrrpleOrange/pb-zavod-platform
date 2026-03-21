@@ -59,16 +59,18 @@ class ZoneServiceTest {
     @Test
     void holdZone_throwsZoneBusy_whenOverlapsReachCapacity() {
         UUID zoneId = UUID.randomUUID();
+        UUID bookingId = UUID.randomUUID();
         UUID slotReservationId = UUID.randomUUID();
 
         Zone zone = new Zone(zoneId, "Z-1", "Rest", ZoneType.REST, 1, true, true);
         SlotReservation slotReservation = new SlotReservation(
                 slotReservationId,
                 UUID.randomUUID(),
-                UUID.randomUUID(),
+                bookingId,
                 SlotReservationStatus.CONFIRMED,
                 OffsetDateTime.now(),
-                null
+                null,
+                false
         );
 
         GameSlot gameSlot = new GameSlot(
@@ -86,7 +88,7 @@ class ZoneServiceTest {
         when(zoneReservationRepository.countOverlaps(eq(zoneId), any(), any(), any(), eq(null))).thenReturn(1L);
 
         BusinessException ex = assertThrows(BusinessException.class,
-                () -> zoneService.holdZone(zoneId, UUID.randomUUID(), slotReservationId));
+                () -> zoneService.holdZone(zoneId, bookingId, slotReservationId));
 
         assertEquals("ZONE_BUSY", ex.getCode());
         verify(zoneReservationRepository, never()).save(any());
@@ -105,7 +107,8 @@ class ZoneServiceTest {
                 bookingId,
                 SlotReservationStatus.CONFIRMED,
                 OffsetDateTime.now(),
-                null
+                null,
+                false
         );
 
         GameSlot gameSlot = new GameSlot(
