@@ -5,5 +5,5 @@ RUN mvn -pl scheduling-app -am clean package -DskipTests
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
-COPY --from=builder /build/scheduling-app/target/*.jar app.jar
+COPY --from=builder /build/scheduling-app/target/app.jar app.jar
 ENTRYPOINT ["java", "-jar", "app.jar"]
