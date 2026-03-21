@@ -37,4 +37,5 @@ public class SubmitBookingRequest {
     private UUID zoneId;
     private BigDecimal totalPriceSnapshot;
     private Integer extraEquipmentCount;
+    private boolean exclusive;
 }

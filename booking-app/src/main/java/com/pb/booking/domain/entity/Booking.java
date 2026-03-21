@@ -57,6 +57,9 @@ public class Booking {
     @Column(name = "extra_equipment_count")
     private Integer extraEquipmentCount;
 
+    @Column(name = "is_exclusive", nullable = false)
+    private boolean exclusive;
+
     @Column(name = "prepaid_amount", precision = 12, scale = 2)
     private BigDecimal prepaidAmount;
 

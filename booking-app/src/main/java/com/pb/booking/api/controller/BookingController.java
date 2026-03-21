@@ -37,7 +37,7 @@ public class BookingController {
 
     @PostMapping("/{id}/prepayment")
     public ResponseEntity<BookingResponse> recordPrepayment(
-            @PathVariable("id") UUID id,
+            @PathVariable UUID id,
             @Valid @RequestBody RecordPrepaymentRequest request) {
         Booking booking = bookingService.recordPrepayment(id, request);
         return ResponseEntity.ok(bookingMapper.toResponse(booking));
@@ -45,48 +45,48 @@ public class BookingController {
 
     @PostMapping("/{id}/confirm")
     public ResponseEntity<BookingResponse> confirmBooking(
-            @PathVariable("id") UUID id,
+            @PathVariable UUID id,
             @RequestBody(required = false) ConfirmBookingRequest request) {
         Booking booking = bookingService.confirmBooking(id, request);
         return ResponseEntity.ok(bookingMapper.toResponse(booking));
     }
 
     @PostMapping("/{id}/start")
-    public ResponseEntity<BookingResponse> startVisit(@PathVariable("id") UUID id) {
+    public ResponseEntity<BookingResponse> startVisit(@PathVariable UUID id) {
         Booking booking = bookingService.startVisit(id);
         return ResponseEntity.ok(bookingMapper.toResponse(booking));
     }
 
     @PostMapping("/{id}/cancel")
     public ResponseEntity<BookingResponse> cancelBooking(
-            @PathVariable("id") UUID id,
+            @PathVariable UUID id,
             @RequestBody(required = false) CancelBookingRequest request) {
         Booking booking = bookingService.cancelBooking(id, request);
         return ResponseEntity.ok(bookingMapper.toResponse(booking));
     }
 
     @PostMapping("/{id}/complete")
-    public ResponseEntity<BookingResponse> completeBooking(@PathVariable("id") UUID id) {
+    public ResponseEntity<BookingResponse> completeBooking(@PathVariable UUID id) {
         Booking booking = bookingService.completeBooking(id);
         return ResponseEntity.ok(bookingMapper.toResponse(booking));
     }
 
     @PostMapping("/{id}/no-show")
-    public ResponseEntity<BookingResponse> noShowBooking(@PathVariable("id") UUID id) {
+    public ResponseEntity<BookingResponse> noShowBooking(@PathVariable UUID id) {
         Booking booking = bookingService.noShowBooking(id);
         return ResponseEntity.ok(bookingMapper.toResponse(booking));
     }
 
     @PatchMapping("/{id}")
     public ResponseEntity<BookingResponse> updateBooking(
-            @PathVariable("id") UUID id,
+            @PathVariable UUID id,
             @Valid @RequestBody UpdateBookingRequest request) {
         Booking booking = bookingService.updateBooking(id, request);
         return ResponseEntity.ok(bookingMapper.toResponse(booking));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<BookingResponse> getBooking(@PathVariable("id") UUID id) {
+    public ResponseEntity<BookingResponse> getBooking(@PathVariable UUID id) {
         Booking booking = bookingService.getBooking(id);
         return ResponseEntity.ok(bookingMapper.toResponse(booking));
     }
