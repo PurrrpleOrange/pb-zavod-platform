@@ -36,7 +36,7 @@ public class SlotService {
     }
 
     @Transactional
-    public HoldSlotResponse holdSlot(UUID slotId, UUID bookingId) {
+    public HoldSlotResponse holdSlot(UUID slotId, UUID bookingId, boolean isExclusive) {
         GameSlot slot = gameSlotRepository.findByIdForUpdate(slotId)
                 .orElseThrow(() -> NotFoundException.of(
                         "SLOT_NOT_FOUND",
@@ -54,6 +54,17 @@ public class SlotService {
             throw BusinessException.of("SLOT_FULL", "No capacity for slot", Map.of("slotId", slotId));
         }
 
+        if (isExclusive && active > 0) {
+            throw BusinessException.of("SLOT_EXCLUSIVE",
+                    "Exclusive booking requires an empty slot",
+                    Map.of("slotId", slotId));
+        }
+        if (!isExclusive && slotReservationRepository.hasActiveExclusive(slotId, now)) {
+            throw BusinessException.of("SLOT_EXCLUSIVE",
+                    "Slot is occupied by an exclusive booking",
+                    Map.of("slotId", slotId));
+        }
+
         OffsetDateTime expiresAt = now.plusMinutes(Math.max(1, schedulingProperties.holdMinutes()));
 
         SlotReservation r = new SlotReservation(
@@ -62,7 +73,8 @@ public class SlotService {
                 bookingId,
                 SlotReservationStatus.HOLD,
                 now,
-                expiresAt
+                expiresAt,
+                isExclusive
         );
 
         slotReservationRepository.save(r);

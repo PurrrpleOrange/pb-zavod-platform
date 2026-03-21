@@ -22,6 +22,17 @@ public interface SlotReservationRepository extends JpaRepository<SlotReservation
     """)
     long countActive(@Param("slotId") UUID slotId, @Param("now") OffsetDateTime now);
 
+    @Query("""
+        select count(r) > 0 from SlotReservation r
+        where r.gameSlotId = :slotId
+          and r.exclusive = true
+          and (
+               r.status = com.pb.scheduling.domain.enums.SlotReservationStatus.CONFIRMED
+               or (r.status = com.pb.scheduling.domain.enums.SlotReservationStatus.HOLD and r.expiresAt > :now)
+          )
+    """)
+    boolean hasActiveExclusive(@Param("slotId") UUID slotId, @Param("now") OffsetDateTime now);
+
     Optional<SlotReservation> findByIdAndBookingId(UUID id, UUID bookingId);
 
     @Query("""
