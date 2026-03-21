@@ -313,7 +313,92 @@ public class BookingService {
         if (request.getAdminNotes() != null) booking.setAdminNotes(request.getAdminNotes());
         if (request.getExclusive() != null) booking.setExclusive(request.getExclusive());
 
+        boolean needsSlotConfirm = booking.getStatus() == BookingStatus.PREPAID
+                || booking.getStatus() == BookingStatus.CONFIRMED;
+
+        // Reassign game slot if changed
+        if (request.getGameSlotId() != null && !request.getGameSlotId().equals(booking.getGameSlotId())) {
+            reassignGameSlot(booking, request.getGameSlotId(), needsSlotConfirm);
+        }
+
+        // Reassign zone if changed (requires an active slotReservationId)
+        if (request.getZoneId() != null && booking.getSlotReservationId() != null) {
+            reassignZone(booking, request.getZoneId(), needsSlotConfirm);
+        }
+
         return bookingRepository.save(booking);
+    }
+
+    private void reassignGameSlot(Booking booking, UUID newGameSlotId, boolean confirmImmediately) {
+        UUID oldSlotReservationId = booking.getSlotReservationId();
+        UUID oldZoneReservationId = booking.getZoneReservationId();
+
+        // 1. Hold new slot
+        HoldSlotResponse holdResponse;
+        try {
+            holdResponse = schedulingClient.holdSlot(newGameSlotId, booking.getId(), booking.isExclusive());
+        } catch (Exception e) {
+            log.error("Failed to hold new slot {} for booking {}", newGameSlotId, booking.getId(), e);
+            throw new BookingException(ErrorCode.BOOKING_SLOT_HOLD_FAILED, "Failed to hold new game slot");
+        }
+
+        // 2. Confirm new slot if booking is already confirmed/prepaid
+        if (confirmImmediately) {
+            try {
+                schedulingClient.confirmSlotHold(holdResponse.getSlotReservationId(), booking.getId());
+            } catch (Exception e) {
+                schedulingClient.cancelSlotHold(holdResponse.getSlotReservationId(), booking.getId());
+                log.error("Failed to confirm new slot hold for booking {}", booking.getId(), e);
+                throw new BookingException(ErrorCode.BOOKING_SLOT_HOLD_FAILED, "Failed to confirm new slot hold");
+            }
+        }
+
+        // 3. Cancel old zone reservation (it's tied to the old slot)
+        if (oldZoneReservationId != null) {
+            schedulingClient.cancelZoneHold(oldZoneReservationId, booking.getId());
+            booking.setZoneReservationId(null);
+        }
+
+        // 4. Cancel old slot reservation
+        if (oldSlotReservationId != null) {
+            schedulingClient.cancelSlotHold(oldSlotReservationId, booking.getId());
+        }
+
+        booking.setGameSlotId(newGameSlotId);
+        booking.setSlotReservationId(holdResponse.getSlotReservationId());
+        log.info("Reassigned game slot for booking {}: {} -> {}", booking.getId(), oldSlotReservationId, holdResponse.getSlotReservationId());
+    }
+
+    private void reassignZone(Booking booking, UUID newZoneId, boolean confirmImmediately) {
+        UUID oldZoneReservationId = booking.getZoneReservationId();
+
+        // 1. Hold new zone
+        HoldZoneResponse zoneResponse;
+        try {
+            zoneResponse = schedulingClient.holdZone(newZoneId, booking.getId(), booking.getSlotReservationId());
+        } catch (Exception e) {
+            log.error("Failed to hold new zone {} for booking {}", newZoneId, booking.getId(), e);
+            throw new BookingException(ErrorCode.BOOKING_ZONE_HOLD_FAILED, "Failed to hold new zone");
+        }
+
+        // 2. Confirm new zone if booking is already confirmed/prepaid
+        if (confirmImmediately) {
+            try {
+                schedulingClient.confirmZoneHold(zoneResponse.getZoneReservationId(), booking.getId());
+            } catch (Exception e) {
+                schedulingClient.cancelZoneHold(zoneResponse.getZoneReservationId(), booking.getId());
+                log.error("Failed to confirm new zone hold for booking {}", booking.getId(), e);
+                throw new BookingException(ErrorCode.BOOKING_ZONE_HOLD_FAILED, "Failed to confirm new zone hold");
+            }
+        }
+
+        // 3. Cancel old zone reservation
+        if (oldZoneReservationId != null) {
+            schedulingClient.cancelZoneHold(oldZoneReservationId, booking.getId());
+        }
+
+        booking.setZoneReservationId(zoneResponse.getZoneReservationId());
+        log.info("Reassigned zone for booking {}: {} -> {}", booking.getId(), oldZoneReservationId, zoneResponse.getZoneReservationId());
     }
 
     @Transactional(readOnly = true)
