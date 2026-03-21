@@ -19,12 +19,12 @@ public class SchedulingClient {
 
     private final WebClient schedulingWebClient;
 
-    public HoldSlotResponse holdSlot(UUID gameSlotId, UUID bookingId) {
-        log.info("Requesting slot hold: slotId={}, bookingId={}", gameSlotId, bookingId);
+    public HoldSlotResponse holdSlot(UUID gameSlotId, UUID bookingId, boolean isExclusive) {
+        log.info("Requesting slot hold: slotId={}, bookingId={}, exclusive={}", gameSlotId, bookingId, isExclusive);
 
         return schedulingWebClient.post()
                 .uri("/slots/{slotId}/holds", gameSlotId)
-                .bodyValue(new HoldSlotRequest(bookingId))
+                .bodyValue(new HoldSlotRequest(bookingId, isExclusive))
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, response -> {
                     log.error("Slot hold failed: status={}", response.statusCode());

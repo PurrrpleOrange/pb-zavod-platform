@@ -10,4 +10,5 @@ import java.util.UUID;
 public class HoldSlotRequest {
 
     private UUID bookingId;
+    private boolean exclusive;
 }

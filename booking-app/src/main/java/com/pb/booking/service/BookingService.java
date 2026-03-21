@@ -65,6 +65,7 @@ public class BookingService {
                 .totalPriceSnapshot(request.getTotalPriceSnapshot())
                 .desiredDate(request.getDesiredDate())
                 .extraEquipmentCount(request.getExtraEquipmentCount())
+                .exclusive(request.isExclusive())
                 .status(BookingStatus.HOLD)
                 .holdExpiresAt(holdExpiresAt)
                 .build();
@@ -75,7 +76,7 @@ public class BookingService {
         if (request.getGameSlotId() != null) {
             HoldSlotResponse holdResponse;
             try {
-                holdResponse = schedulingClient.holdSlot(request.getGameSlotId(), booking.getId());
+                holdResponse = schedulingClient.holdSlot(request.getGameSlotId(), booking.getId(), request.isExclusive());
             } catch (BookingException e) {
                 bookingRepository.delete(booking);
                 throw e;
@@ -173,11 +174,14 @@ public class BookingService {
             if (request.getAdminNotes() != null) {
                 booking.setAdminNotes(request.getAdminNotes());
             }
+            if (request.getExclusive() != null) {
+                booking.setExclusive(request.getExclusive());
+            }
         }
 
         // Type A: slot not yet reserved — hold + confirm now
         if (booking.getSlotReservationId() == null && booking.getGameSlotId() != null) {
-            HoldSlotResponse holdResponse = schedulingClient.holdSlot(booking.getGameSlotId(), bookingId);
+            HoldSlotResponse holdResponse = schedulingClient.holdSlot(booking.getGameSlotId(), bookingId, booking.isExclusive());
             booking.setSlotReservationId(holdResponse.getSlotReservationId());
             schedulingClient.confirmSlotHold(booking.getSlotReservationId(), bookingId);
         }
@@ -307,6 +311,7 @@ public class BookingService {
         if (request.getTotalPriceSnapshot() != null) booking.setTotalPriceSnapshot(request.getTotalPriceSnapshot());
         if (request.getExtraEquipmentCount() != null) booking.setExtraEquipmentCount(request.getExtraEquipmentCount());
         if (request.getAdminNotes() != null) booking.setAdminNotes(request.getAdminNotes());
+        if (request.getExclusive() != null) booking.setExclusive(request.getExclusive());
 
         return bookingRepository.save(booking);
     }
