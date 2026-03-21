@@ -14,4 +14,5 @@ public class ConfirmBookingRequest {
     private BigDecimal totalPriceSnapshot;
     private Integer extraEquipmentCount;
     private String adminNotes;
+    private Boolean exclusive;
 }
