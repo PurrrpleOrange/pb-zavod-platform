@@ -1,0 +1,2 @@
+ALTER TABLE booking.booking
+    ADD COLUMN is_exclusive BOOLEAN NOT NULL DEFAULT FALSE;
