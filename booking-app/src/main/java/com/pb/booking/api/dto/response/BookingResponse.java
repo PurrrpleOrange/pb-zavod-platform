@@ -26,6 +26,7 @@ public class BookingResponse {
     private Integer extraEquipmentCount;
     private BigDecimal prepaidAmount;
     private String adminNotes;
+    private boolean exclusive;
     private Instant holdExpiresAt;
     private Instant createdAt;
     private Instant updatedAt;

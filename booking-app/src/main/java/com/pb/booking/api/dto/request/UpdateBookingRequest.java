@@ -24,4 +24,5 @@ public class UpdateBookingRequest {
     private Integer extraEquipmentCount;
 
     private String adminNotes;
+    private Boolean exclusive;
 }

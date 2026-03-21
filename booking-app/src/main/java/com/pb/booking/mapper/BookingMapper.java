@@ -23,6 +23,7 @@ public class BookingMapper {
                 .extraEquipmentCount(booking.getExtraEquipmentCount())
                 .prepaidAmount(booking.getPrepaidAmount())
                 .adminNotes(booking.getAdminNotes())
+                .exclusive(booking.isExclusive())
                 .holdExpiresAt(booking.getHoldExpiresAt())
                 .createdAt(booking.getCreatedAt())
                 .updatedAt(booking.getUpdatedAt())
