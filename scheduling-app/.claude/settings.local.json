@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /c/Users/latye/IdeaProjects/PETS/pb-zavod-platform/scheduling-app/src/main/resources/db/migration -name *.sql)",
+      "Bash(grep -r \"game.mode\\\\|gameMode\\\\|LASERTAG\\\\|lasertag\" C:UserslatyeIdeaProjectsPETSpb-zavod-platform --include=*.md)",
+      "Bash(grep -r \"lasertag\\\\|gameMode\\\\|game_mode\\\\|exclusive\" /c/Users/latye/IdeaProjects/PETS/pb-zavod-platform/scheduling-app/src --include=*.java --include=*.sql)",
+      "Bash(mvn -pl scheduling-app test -q)",
+      "Bash(java -version)",
+      "Bash(/c/Users/latye/.jdks/temurin-21.0.6/bin/java -version)",
+      "Read(//c/Users/latye/.jdks//**)",
+      "Read(//c/Users/latye/**)",
+      "Bash(JAVA_HOME=/c/Users/latye/.jdks/temurin-21.0.10 PATH=\"/c/Users/latye/.jdks/temurin-21.0.10/bin:$PATH\" mvn -pl scheduling-app test -q)",
+      "Bash(JAVA_HOME=/c/Users/latye/.jdks/temurin-21.0.10 PATH=\"/c/Users/latye/.jdks/temurin-21.0.10/bin:$PATH\" mvn -pl scheduling-app test)",
+      "Bash(JAVA_HOME=/c/Users/latye/.jdks/temurin-21.0.10 PATH=\"/c/Users/latye/.jdks/temurin-21.0.10/bin:$PATH\" mvn -pl booking-app compile -q)",
+      "Bash(mvn -pl booking-app compile -q)"
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/latye/IdeaProjects/PETS/pb-zavod-platform/**)",
+      "Bash(mvn -pl booking-app clean compile -q)",
+      "Read(//c/Program Files/Eclipse Adoptium/**)",
+      "Read(//c/Program Files/Java/**)",
+      "Read(//c/Program Files/Microsoft/**)",
+      "Bash(JAVA_HOME=\"C:/Program Files/Eclipse Adoptium/jdk-21.0.7.6-hotspot\" mvn -pl booking-app clean compile -q)",
+      "Bash(JAVA_HOME=\"C:/Program Files/Eclipse Adoptium/jdk-21.0.7.6-hotspot\" mvn -pl scheduling-app clean compile -q)",
+      "Bash(mvn -pl booking-app compile -q)",
+      "Bash(java -version)",
+      "Bash(mvn -version)",
+      "Bash(dir 'C:\\\\Program Files\\\\Eclipse Adoptium')",
+      "Bash(dir 'C:\\\\Program Files\\\\Java')",
+      "Bash(dir 'C:\\\\Program Files\\\\Microsoft')",
+      "Bash(JAVA_HOME=\"C:\\\\Program Files\\\\Eclipse Adoptium\\\\jdk-21.0.7.6-hotspot\" mvn -pl booking-app compile)"
+    ]
+  }
+}

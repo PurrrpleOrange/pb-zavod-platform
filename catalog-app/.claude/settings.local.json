@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git:*)",
+      "Bash(find C:/Users/latye/IdeaProjects/PETS/pb-zavod-platform/common/src -type f -name *.java)",
+      "Bash(find /c/Users/latye/IdeaProjects/PETS/pb-zavod-platform/scheduling-app/src -name *.java -path */dto/*)",
+      "Bash(mvn clean:*)",
+      "Bash(java -version)",
+      "Bash(mvn -version)",
+      "Bash(echo $JAVA_HOME)",
+      "Read(//c/Program Files/Eclipse Adoptium//**)",
+      "Read(//c/Program Files/Java//**)",
+      "Bash(JAVA_HOME=\"/c/Program Files/Java/jdk-21.0.7.6-hotspot\" mvn clean install -pl catalog-app -am -DskipTests)",
+      "Bash(JAVA_HOME=\"/c/Program Files/Eclipse Adoptium/jdk-21.0.7.6-hotspot\" mvn clean install -pl catalog-app -am -DskipTests)",
+      "Bash(where java:*)",
+      "Bash(echo \"JAVA_HOME=$JAVA_HOME\")",
+      "Bash(JAVA_HOME=\"/c/Program Files/Eclipse Adoptium/jdk-21.0.7.6-hotspot\" mvn clean install -pl catalog-app -DskipTests)"
+    ]
+  }
+}
