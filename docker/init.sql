@@ -1,0 +1,5 @@
+CREATE DATABASE pb_scheduling;
+CREATE DATABASE pb_booking;
+CREATE DATABASE pb_catalog;
+CREATE DATABASE pb_sales;
+CREATE DATABASE pb_auth;
