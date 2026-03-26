@@ -16,6 +16,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -37,7 +38,8 @@ class SlotServiceTest {
 
     @BeforeEach
     void setUp() {
-        slotService = new SlotService(gameSlotRepository, slotReservationRepository, new SchedulingProperties(15, 180));
+        slotService = new SlotService(gameSlotRepository, slotReservationRepository,
+                new SchedulingProperties(15, 180, "Europe/Moscow"), Clock.systemDefaultZone());
     }
 
     @Test
@@ -181,7 +183,7 @@ class SlotServiceTest {
                 false
         );
 
-        when(slotReservationRepository.findByIdAndBookingId(reservationId, bookingId)).thenReturn(Optional.of(hold));
+        when(slotReservationRepository.findByIdAndBookingIdForUpdate(reservationId, bookingId)).thenReturn(Optional.of(hold));
 
         BusinessException ex = assertThrows(BusinessException.class,
                 () -> slotService.confirmHold(reservationId, bookingId));
@@ -204,7 +206,7 @@ class SlotServiceTest {
                 false
         );
 
-        when(slotReservationRepository.findByIdAndBookingId(reservationId, bookingId)).thenReturn(Optional.of(cancelled));
+        when(slotReservationRepository.findByIdAndBookingIdForUpdate(reservationId, bookingId)).thenReturn(Optional.of(cancelled));
 
         slotService.cancelHold(reservationId, bookingId);
 

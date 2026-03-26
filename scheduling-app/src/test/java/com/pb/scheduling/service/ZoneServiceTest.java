@@ -22,6 +22,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -52,7 +53,8 @@ class ZoneServiceTest {
                 slotReservationRepository,
                 zoneReservationRepository,
                 gameSlotRepository,
-                new SchedulingProperties(15, 180)
+                new SchedulingProperties(15, 180, "Europe/Moscow"),
+                Clock.systemDefaultZone()
         );
     }
 

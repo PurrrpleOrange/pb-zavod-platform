@@ -22,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,7 @@ public class ZoneService {
     private final ZoneReservationRepository zoneReservationRepository;
     private final GameSlotRepository gameSlotRepository;
     private final SchedulingProperties schedulingProperties;
+    private final Clock clock;
 
     // ── CRUD ──────────────────────────────────────────────────────────────────
 
@@ -167,7 +169,7 @@ public class ZoneService {
             throw BusinessException.of("SLOT_RES_STATUS_MISMATCH", "slot reservation status mismatch",
                     Map.of("slotReservationId", slotReservationId));
         }
-        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime now = OffsetDateTime.now(clock);
         if (slotReservation.getStatus() == SlotReservationStatus.HOLD &&
                 (slotReservation.getExpiresAt() == null || !slotReservation.getExpiresAt().isAfter(now))) {
             throw BusinessException.of("SLOT_HOLD_EXPIRED", "Slot hold expired",
@@ -243,7 +245,7 @@ public class ZoneService {
         }
 
         // истёкший HOLD нельзя подтверждать
-        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime now = OffsetDateTime.now(clock);
         if (r.getExpiresAt() == null || !r.getExpiresAt().isAfter(now)) {
             throw BusinessException.of("HOLD_EXPIRED", "Zone hold expired",
                     Map.of("zoneReservationId", zoneReservationId, "expiresAt", r.getExpiresAt()));
@@ -290,7 +292,8 @@ public class ZoneService {
 
     @Transactional
     public void finishChain(UUID zoneReservationId, UUID bookingId) {
-        ZoneReservation root = zoneReservationRepository.findById(zoneReservationId)
+        // BUG-3: используем пессимистическую блокировку
+        ZoneReservation root = zoneReservationRepository.findByIdForUpdate(zoneReservationId)
                 .orElseThrow(() -> NotFoundException.of("ZONE_RES_NOT_FOUND", "Zone reservation not found",
                         Map.of("zoneReservationId", zoneReservationId)));
 
@@ -301,7 +304,8 @@ public class ZoneService {
 
         List<ZoneReservation> chain = zoneReservationRepository.findByBookingIdAndZoneId(bookingId, root.getZoneId());
         for (ZoneReservation res : chain) {
-            if (res.getStatus() == ZoneReservationStatus.ACTIVE || res.getStatus() == ZoneReservationStatus.HOLD) {
+            // BUG-4: только ACTIVE → FINISHED, HOLD должен остаться для cleanup-джобы
+            if (res.getStatus() == ZoneReservationStatus.ACTIVE) {
                 res.setStatus(ZoneReservationStatus.FINISHED);
                 res.setExpiresAt(null);
                 zoneReservationRepository.save(res);
@@ -341,7 +345,7 @@ public class ZoneService {
                 .orElseThrow(() -> NotFoundException.of("ZONE_NOT_FOUND", "Zone not found",
                         Map.of("zoneId", base.getZoneId())));
 
-        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime now = OffsetDateTime.now(clock);
         long overlaps = zoneReservationRepository.countOverlaps(
                 base.getZoneId(),
                 base.getEndTime(),

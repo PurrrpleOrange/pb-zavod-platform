@@ -38,9 +38,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiError> handleBusiness(BusinessException ex) {
+        // BUG-5: NotFoundException → 404, BusinessException → 422 (не 400)
         HttpStatus status = ex instanceof com.pb.scheduling.exception.NotFoundException
                 ? HttpStatus.NOT_FOUND
-                : HttpStatus.BAD_REQUEST;
+                : HttpStatus.UNPROCESSABLE_ENTITY;
 
         log.warn("Business error [{}]: {} details={}", ex.getCode(), ex.getMessage(), ex.getDetails());
 
