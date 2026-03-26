@@ -64,5 +64,22 @@ services:
       scheduling-app:
         condition: service_started
 
+  gateway-app:
+    build:
+      context: .
+      dockerfile: gateway-app/Dockerfile
+    container_name: pb-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      PB_GATEWAY_JWT_SECRET: "pb-auth-service-access-secret-change-me-1234567890"
+    depends_on:
+      auth-service:
+        condition: service_started
+      scheduling-app:
+        condition: service_started
+      booking-app:
+        condition: service_started
+
 volumes:
   pb_pg_data:

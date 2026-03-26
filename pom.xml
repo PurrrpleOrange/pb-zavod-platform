@@ -12,6 +12,7 @@
 
     <modules>
         <module>common</module>
+        <module>gateway-app</module>
         <module>scheduling-app</module>
         <module>booking-app</module>
         <module>catalog-app</module>
@@ -30,6 +31,13 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
                 <version>${spring.boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>2023.0.1</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
