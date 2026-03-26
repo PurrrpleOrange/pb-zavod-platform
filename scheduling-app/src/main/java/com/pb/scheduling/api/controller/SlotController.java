@@ -36,7 +36,7 @@ public class SlotController {
     @PostMapping("/slots/{slotId}/holds")
     @ResponseStatus(HttpStatus.CREATED)
     public HoldSlotResponse hold(
-            @PathVariable("slotId") UUID slotId,
+            @PathVariable UUID slotId,
             @Valid @RequestBody HoldSlotRequest req) {
         return slotService.holdSlot(slotId, req.getBookingId(), req.isExclusive());
     }
@@ -44,7 +44,7 @@ public class SlotController {
     @PostMapping("/slot-holds/{slotReservationId}/confirm")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void confirm(
-            @PathVariable("slotReservationId") UUID slotReservationId,
+            @PathVariable UUID slotReservationId,
             @Valid @RequestBody ConfirmByBookingRequest req) {
         slotService.confirmHold(slotReservationId, req.getBookingId());
     }
@@ -52,7 +52,7 @@ public class SlotController {
     @PostMapping("/slot-holds/{slotReservationId}/cancel")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void cancel(
-            @PathVariable("slotReservationId") UUID slotReservationId,
+            @PathVariable UUID slotReservationId,
             @Valid @RequestBody ConfirmByBookingRequest req) {
         slotService.cancelHold(slotReservationId, req.getBookingId());
     }

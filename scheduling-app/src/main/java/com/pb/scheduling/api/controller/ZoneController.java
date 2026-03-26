@@ -39,20 +39,20 @@ public class ZoneController {
     }
 
     @GetMapping("/zones/{zoneId}")
-    public ZoneResponse getZone(@PathVariable("zoneId") UUID zoneId) {
+    public ZoneResponse getZone(@PathVariable UUID zoneId) {
         return zoneService.getZone(zoneId);
     }
 
     @PatchMapping("/zones/{zoneId}")
     public ZoneResponse updateZone(
-            @PathVariable("zoneId") UUID zoneId,
+            @PathVariable UUID zoneId,
             @Valid @RequestBody UpdateZoneRequest req) {
         return zoneService.updateZone(zoneId, req);
     }
 
     @DeleteMapping("/zones/{zoneId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deactivateZone(@PathVariable("zoneId") UUID zoneId) {
+    public void deactivateZone(@PathVariable UUID zoneId) {
         zoneService.deactivateZone(zoneId);
     }
 
@@ -88,7 +88,7 @@ public class ZoneController {
     @PostMapping("/zone-holds/{zoneReservationId}/confirm")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void confirm(
-            @PathVariable("zoneReservationId") UUID zoneReservationId,
+            @PathVariable UUID zoneReservationId,
             @Valid @RequestBody ConfirmByBookingRequest req) {
         zoneService.confirmZoneHold(zoneReservationId, req.getBookingId());
     }
@@ -96,14 +96,14 @@ public class ZoneController {
     @PostMapping("/zone-holds/{zoneReservationId}/cancel")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void cancel(
-            @PathVariable("zoneReservationId") UUID zoneReservationId,
+            @PathVariable UUID zoneReservationId,
             @Valid @RequestBody ConfirmByBookingRequest req) {
         zoneService.cancelZoneHold(zoneReservationId, req.getBookingId());
     }
 
     @PostMapping("/zone-reservations/{zoneReservationId}/extend")
     @ResponseStatus(HttpStatus.CREATED)
-    public UUID extend(@PathVariable("zoneReservationId") UUID zoneReservationId,
+    public UUID extend(@PathVariable UUID zoneReservationId,
                        @Valid @RequestBody ExtendZoneRequest req) {
         return zoneService.extend(
                 zoneReservationId,
@@ -115,7 +115,7 @@ public class ZoneController {
     @PostMapping("/zone-reservations/{zoneReservationId}/finish-chain")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void finishChain(
-            @PathVariable("zoneReservationId") UUID zoneReservationId,
+            @PathVariable UUID zoneReservationId,
             @Valid @RequestBody ConfirmByBookingRequest req) {
         zoneService.finishChain(zoneReservationId, req.getBookingId());
     }
