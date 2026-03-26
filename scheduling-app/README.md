@@ -33,9 +33,9 @@ open http://localhost:8081/swagger-ui
 ## Доменная модель
 
 ```
-┌──────────┐       ┌────────────┐       ┌──────────────────┐
-│  Arena   │──1:N──│  GameSlot   │──1:N──│ SlotReservation  │
-└──────────┘       └────────────┘       └──────────────────┘
+┌──────────┐       ┌────────────┐        ┌──────────────────┐
+│  Arena   │──1:N──│  GameSlot  │ ──1:N──│ SlotReservation  │
+└──────────┘       └────────────┘        └──────────────────┘
                                                │
                                                │ slotReservationId
                                                ▼
@@ -121,37 +121,38 @@ open http://localhost:8081/swagger-ui
 ### SlotReservation
 
 ```
-  ┌──────┐    confirm    ┌───────────┐
-  │ HOLD │──────────────▶│ CONFIRMED │
-  └──┬───┘               └───────────┘
-     │ cancel / expire
-     ▼
-  ┌───────────┐
+  ┌──────┐    confirm     ┌───────────┐
+  │ HOLD │──────────────> │ CONFIRMED │
+  └──┬───┘                └─────┬─────┘
+     │ cancel / expire          │ cancel
+     ▼                          ▼
+  ┌───────────┐◀────────────────┘
   │ CANCELLED │
   └───────────┘
 ```
 
 - **HOLD** создается с `expiresAt = now + holdMinutes`
 - **confirm** проверяет, что `expiresAt > now`
-- **cancel** идемпотентен (повторный вызов — no-op)
+- **cancel** применим к `HOLD` и `CONFIRMED`; идемпотентен (повторный вызов на `CANCELLED` — no-op)
 - **expire** — фоновая задача (`HoldCleanupJob`) каждые 60 сек отменяет просроченные HOLD
 
 ### ZoneReservation
 
 ```
-  ┌──────┐    confirm    ┌────────┐   finish   ┌──────────┐
-  │ HOLD │──────────────▶│ ACTIVE │────────────▶│ FINISHED │
-  └──┬───┘               └───┬────┘             └──────────┘
-     │ cancel / expire       │ extend
-     ▼                       ▼
-  ┌───────────┐        (новая запись
-  │ CANCELLED │         ACTIVE с
-  └───────────┘         parentReservationId)
+  ┌──────┐    confirm    ┌────────┐   finish    ┌──────────┐
+  │ HOLD │──────────────>│ ACTIVE │────────────>│ FINISHED │
+  └──┬───┘               └───┬──┬─┘             └──────────┘
+     │ cancel / expire       │  │ extend / cancel
+     ▼                       │  ▼
+  ┌───────────┐◀─────────────┘ (новая запись
+  │ CANCELLED │                 ACTIVE с
+  └───────────┘                 parentReservationId)
 ```
 
 - **HOLD → ACTIVE** при confirm, повторно проверяются overlaps (race condition protection)
+- **cancel** применим к `HOLD` и `ACTIVE`; идемпотентен (повторный вызов на `CANCELLED` — no-op)
 - **extend** не обновляет существующую запись, а создает **новую** `ZoneReservation` со статусом `ACTIVE` и `parentReservationId` = id базовой
-- **finish-chain** помечает все записи с совпадающим `(bookingId, zoneId)` как `FINISHED`
+- **finish-chain** помечает все записи с совпадающим `(bookingId, zoneId)` в статусе `ACTIVE` как `FINISHED`
 
 ## API
 
@@ -408,112 +409,11 @@ Scheduling-app — **поставщик** для booking-app. Booking-app выз
 
 ## Аудит кода: известные проблемы и рекомендации
 
-> Состояние на 2026-03-25. Раздел описывает найденные баги, пробелы в тестах и рекомендации по улучшению.
+> Состояние на 2026-03-26. Раздел описывает найденные баги, пробелы в тестах и рекомендации по улучшению.
+> Пофикшенные баги отмечены ✅.
 
 ### Баги
 
-#### BUG-1. `SlotService.confirmHold()` — нет пессимистической блокировки
-
-**Файл:** `SlotService.java:86` | **Приоритет:** ВЫСОКИЙ
-
-```java
-SlotReservation r = slotReservationRepository.findByIdAndBookingId(reservationId, bookingId)
-```
-
-`findByIdAndBookingId` не использует `@Lock(PESSIMISTIC_WRITE)`. Все остальные мутирующие методы (holdSlot, confirmZoneHold, cancelZoneHold, extend) корректно блокируют строку. Два параллельных confirm на одну резервацию могут оба пройти.
-
-**Как починить:** использовать уже определенный (но неиспользуемый) `findByIdLocked()` или добавить `findByIdAndBookingIdForUpdate()`.
-
----
-
-#### BUG-2. `SlotService.cancelHold()` — не очищает `expiresAt`
-
-**Файл:** `SlotService.java:120-121` | **Приоритет:** СРЕДНИЙ
-
-```java
-r.setStatus(SlotReservationStatus.CANCELLED);
-slotReservationRepository.save(r);
-// expiresAt остается установленным
-```
-
-Для сравнения, зоновый cancel (`ZoneService.java:287`) делает `r.setExpiresAt(null)`. Отмененная слотовая резервация продолжает хранить `expiresAt`, что может сбивать запросы и аналитику.
-
----
-
-#### BUG-3. `ZoneService.finishChain()` — нет блокировки
-
-**Файл:** `ZoneService.java:293` | **Приоритет:** ВЫСОКИЙ
-
-```java
-ZoneReservation root = zoneReservationRepository.findById(zoneReservationId) // <-- без FOR UPDATE
-```
-
-Все остальные мутирующие методы в `ZoneService` используют `findByIdForUpdate()`. `finishChain` — единственный, кто читает без блокировки. Race condition: параллельный `extend` может добавить новую запись в цепочку между `findByBookingIdAndZoneId` (строка 302) и обновлением записей.
-
----
-
-#### BUG-4. `finishChain()` — нарушение машины состояний: `HOLD → FINISHED`
-
-**Файл:** `ZoneService.java:304` | **Приоритет:** СРЕДНИЙ
-
-```java
-if (res.getStatus() == ZoneReservationStatus.ACTIVE
-    || res.getStatus() == ZoneReservationStatus.HOLD) {  // <-- HOLD → FINISHED не описан
-    res.setStatus(ZoneReservationStatus.FINISHED);
-```
-
-По документации допустим только переход `ACTIVE → FINISHED`. Просроченный HOLD должен стать `CANCELLED`, не `FINISHED`.
-
----
-
-#### BUG-5. `GlobalExceptionHandler` — возвращает 400 вместо 422
-
-**Файл:** `GlobalExceptionHandler.java:43` | **Приоритет:** СРЕДНИЙ
-
-```java
-: HttpStatus.BAD_REQUEST;  // 400, по спецификации должно быть 422
-```
-
-По спецификации: `BusinessException` → **422 (UNPROCESSABLE_ENTITY)**, `NotFoundException` → 404. Клиенты не могут отличить ошибку валидации (400) от бизнес-правила (422).
-
----
-
-#### BUG-6. `cancelHold()` позволяет отменить CONFIRMED-резервацию
-
-**Файл:** `SlotService.java:116-121` | **Приоритет:** СРЕДНИЙ
-
-```java
-if (r.getStatus() == SlotReservationStatus.CANCELLED) {
-    return;
-}
-r.setStatus(SlotReservationStatus.CANCELLED); // CONFIRMED тоже попадает сюда
-```
-
-По машине состояний переход `CONFIRMED → CANCELLED` не описан. Нужна проверка, что статус == `HOLD` или `CANCELLED`.
-
----
-
-#### BUG-7. `holdSlot()` — нет проверки, что слот не в прошлом
-
-**Файл:** `SlotService.java:47-49` | **Приоритет:** СРЕДНИЙ
-
-Проверяется только `slot.getStatus() == OPEN`, но нет проверки `slot.getEndTime() > now`. Можно забронировать слот, который уже прошел. Для сравнения — `ZoneService.holdZone()` (строка 189) корректно проверяет `gameSlot.getEndTime() > now`.
-
----
-
-#### BUG-8. `OffsetDateTime.now()` без явного UTC
-
-**Файлы:** `SlotService.java:51`, `ZoneService.java` (множество мест) | **Приоритет:** НИЗКИЙ
-
-```java
-OffsetDateTime now = OffsetDateTime.now(); // используется системный часовой пояс
-```
-
-Hibernate настроен на `time_zone: UTC`, но Java-код использует системный часовой пояс. Если сервер запустится не в UTC — смещения в сравнениях `expiresAt`.
-
-**Как починить:** использовать `OffsetDateTime.now(ZoneOffset.UTC)` или инжектить `Clock` для тестируемости.
-
----
 
 ### Проблемы безопасности
 
@@ -527,19 +427,17 @@ Hibernate настроен на `time_zone: UTC`, но Java-код исполь�
 
 ### Мертвый код
 
-| Файл | Строки | Описание |
-|------|--------|----------|
-| `SlotReservationRepository.java` | 38-42 | `findSimple()` — не используется, дублирует `findById()` |
-| `SlotReservationRepository.java` | 44-46 | `findByIdLocked()` — не используется (но нужен для fix BUG-1!) |
-| `GlobalExceptionHandler.java` | 69-73 | Закомментированный `handleOther()` — дубликат `handleAny()` |
+| Файл | Описание |
+|------|----------|
+| |
 
 ---
 
 ### Архитектурные замечания
 
-- **`updateZone()` без блокировки** (`ZoneService.java:75`): использует `findById()` вместо `findByIdForUpdate()`. Уменьшение `capacityCompanies` одновременно с созданием HOLD — race condition.
-- **Нет валидации конфигурации** (`SchedulingProperties`): `holdMinutes` и `defaultDurationMinutesForZones` могут быть 0 или отрицательными. Код использует костыль `Math.max(1, ...)`. Нужно `@Min(1)` на record-компонентах.
-- **`confirmHold` не идемпотентен** — повторный вызов на CONFIRMED-резервацию бросает `INVALID_STATUS`. `cancelHold` при этом идемпотентен. Несогласованность API-контракта.
+- ✅ **`updateZone()` без блокировки** (`ZoneService.java`): использует `findById()` вместо `findByIdForUpdate()`. Уменьшение `capacityCompanies` одновременно с созданием HOLD — race condition.
+- ✅ **Нет валидации конфигурации** (`SchedulingProperties`): `holdMinutes` и `defaultDurationMinutesForZones` могут быть 0 или отрицательными. Код использует костыль `Math.max(1, ...)`. Нужно `@Min(1)` на record-компонентах.
+- ✅ **`confirmHold` не идемпотентен** — повторный вызов на CONFIRMED-резервацию бросает `INVALID_STATUS`. `cancelHold` при этом идемпотентен. Несогласованность API-контракта.
 
 ---
 
@@ -560,7 +458,7 @@ Hibernate настроен на `time_zone: UTC`, но Java-код исполь�
 
 | Метод | Что не покрыто |
 |-------|----------------|
-| `holdSlot` | `SLOT_NOT_FOUND`, `SLOT_NOT_OPEN` |
+| `holdSlot` | `SLOT_NOT_FOUND`, `SLOT_NOT_OPEN`, `SLOT_ALREADY_FINISHED` |
 | `confirmHold` | success path, `SLOT_HOLD_NOT_FOUND`, повторный confirm |
 | `cancelHold` | отмена HOLD (не CANCELLED), `SLOT_HOLD_NOT_FOUND` |
 | `holdZone` | `ZONE_INACTIVE`, `BOOKING_MISMATCH`, `SLOT_HOLD_EXPIRED`, `GAME_SLOT_NOT_FOUND`, `SLOT_ALREADY_FINISHED` |
@@ -579,26 +477,18 @@ Hibernate настроен на `time_zone: UTC`, но Java-код исполь�
 
 #### Приоритет 1 — Исправить до продакшена
 
-1. Добавить `@Lock(PESSIMISTIC_WRITE)` в `confirmHold()` и `cancelHold()` (BUG-1)
-2. Добавить блокировку в `finishChain()` (BUG-3)
-3. Проверить, что слот не в прошлом в `holdSlot()` (BUG-7)
-4. Запретить `CONFIRMED → CANCELLED` в `cancelHold()` (BUG-6)
-5. Убрать переход `HOLD → FINISHED` в `finishChain()` (BUG-4)
-6. Изменить HTTP-статус BusinessException → 422 (BUG-5)
-7. `include-stacktrace: never` для production-профиля (SEC-1)
-8. Добавить Spring Security / JWT-фильтр (SEC-3)
+1. `include-stacktrace: never` для production-профиля (SEC-1)
+2. Добавить Spring Security / JWT-фильтр (SEC-3)
 
 #### Приоритет 2 — Улучшения качества
 
-9. Использовать `Clock` вместо `OffsetDateTime.now()` — единый часовой пояс + тестируемость (BUG-8)
-10. Валидация `SchedulingProperties` с `@Validated` и `@Min(1)`
-11. Очищать `expiresAt` при cancel слота (BUG-2)
-12. Удалить мертвый код (`findSimple`, комментарии в GlobalExceptionHandler)
-13. Написать тесты для `confirmZoneHold`, `cancelZoneHold`, `finishChain` — критические бизнес-операции без единого теста
+3. Валидация `SchedulingProperties` с `@Validated` и `@Min(1)`
+4. Удалить мертвый код (`findSimple`, комментарии в GlobalExceptionHandler)
+5. Написать тесты для `confirmZoneHold`, `cancelZoneHold`, `finishChain` — критические бизнес-операции без единого теста
 
 #### Приоритет 3 — Хорошие практики
 
-14. Добавить `@DataJpaTest` для `countOverlaps` — сложный запрос, легко сломать
-15. Добавить верхнюю границу для `capacityCompanies` (`@Max`)
-16. Health check эндпоинт для Docker/K8s readiness probe
-17. Метрики (Micrometer) — количество hold/confirm/cancel, время ответов, процент expired holds
+6. Добавить `@DataJpaTest` для `countOverlaps` — сложный запрос, легко сломать
+7. Добавить верхнюю границу для `capacityCompanies` (`@Max`)
+8. Health check эндпоинт для Docker/K8s readiness probe
+9. Метрики (Micrometer) — количество hold/confirm/cancel, время ответов, процент expired holds

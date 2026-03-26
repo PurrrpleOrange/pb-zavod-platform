@@ -38,9 +38,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiError> handleBusiness(BusinessException ex) {
+        // BUG-5: NotFoundException → 404, BusinessException → 422 (не 400)
         HttpStatus status = ex instanceof com.pb.scheduling.exception.NotFoundException
                 ? HttpStatus.NOT_FOUND
-                : HttpStatus.BAD_REQUEST;
+                : HttpStatus.UNPROCESSABLE_ENTITY;
 
         log.warn("Business error [{}]: {} details={}", ex.getCode(), ex.getMessage(), ex.getDetails());
 
@@ -65,10 +66,4 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest()
                 .body(new ApiError("VALIDATION_ERROR", "Validation failed", Map.of("error", ex.getMessage())));
     }
-
-//    @ExceptionHandler(Exception.class)
-//    public ResponseEntity<ApiError> handleOther(Exception ex) {
-//        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-//                .body(new ApiError("INTERNAL_ERROR", "Unexpected error", Map.of()));
-//    }
 }

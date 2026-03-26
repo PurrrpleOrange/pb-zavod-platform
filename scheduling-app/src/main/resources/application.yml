@@ -10,6 +10,7 @@ pb:
     hold-cleanup-interval-ms: 60000
     hold-minutes: 15 # default hold minutes for SlotReservation
     default-duration-minutes_for_zones: 180 # default duration minutes for ZoneReservation
+    timezone: Europe/Moscow
 
 spring:
   datasource:
@@ -22,7 +23,7 @@ spring:
     properties:
       hibernate:
         jdbc:
-          time_zone: UTC
+          time_zone: Europe/Moscow
         default_schema: scheduling
   flyway:
     enabled: true

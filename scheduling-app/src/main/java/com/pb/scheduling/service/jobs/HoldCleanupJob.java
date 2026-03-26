@@ -9,6 +9,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.OffsetDateTime;
 
 @Service
@@ -18,11 +19,12 @@ public class HoldCleanupJob {
     private final ZoneReservationRepository zoneReservationRepository;
     private final SlotReservationRepository slotReservationRepository;
     private final SchedulingProperties properties;
+    private final Clock clock;
 
     @Scheduled(fixedDelayString = "${pb.scheduling.hold-cleanup-interval-ms:60000}")
     @Transactional
     public void cancelExpiredHolds() {
-        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime now = OffsetDateTime.now(clock);
         int zoneCancelled = zoneReservationRepository.cancelExpiredHolds(now);
         int slotCancelled = slotReservationRepository.cancelExpiredHolds(now);
         if (zoneCancelled > 0 || slotCancelled > 0) {
