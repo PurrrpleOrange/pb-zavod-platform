@@ -73,7 +73,7 @@ public class SlotService {
                     Map.of("slotId", slotId));
         }
 
-        OffsetDateTime expiresAt = now.plusMinutes(Math.max(1, schedulingProperties.holdMinutes()));
+        OffsetDateTime expiresAt = now.plusMinutes(schedulingProperties.holdMinutes());
 
         SlotReservation r = new SlotReservation(
                 UUID.randomUUID(),
@@ -99,6 +99,9 @@ public class SlotService {
                         Map.of("slotReservationId", reservationId)
                 ));
 
+        if (r.getStatus() == SlotReservationStatus.CONFIRMED) {
+            return; // идемпотентно
+        }
         if (r.getStatus() != SlotReservationStatus.HOLD) {
             throw BusinessException.of("INVALID_STATUS", "Only HOLD can be confirmed",
                     Map.of("slotReservationId", reservationId, "status", r.getStatus().name()));

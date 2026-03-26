@@ -121,9 +121,9 @@ open http://localhost:8081/swagger-ui
 ### SlotReservation
 
 ```
-  ┌──────┐    confirm    ┌───────────┐
-  │ HOLD │──────────────▶│ CONFIRMED │
-  └──┬───┘               └─────┬─────┘
+  ┌──────┐    confirm     ┌───────────┐
+  │ HOLD │──────────────> │ CONFIRMED │
+  └──┬───┘                └─────┬─────┘
      │ cancel / expire          │ cancel
      ▼                          ▼
   ┌───────────┐◀────────────────┘
@@ -139,8 +139,8 @@ open http://localhost:8081/swagger-ui
 ### ZoneReservation
 
 ```
-  ┌──────┐    confirm    ┌────────┐   finish   ┌──────────┐
-  │ HOLD │──────────────▶│ ACTIVE │────────────▶│ FINISHED │
+  ┌──────┐    confirm    ┌────────┐   finish    ┌──────────┐
+  │ HOLD │──────────────>│ ACTIVE │────────────>│ FINISHED │
   └──┬───┘               └───┬──┬─┘             └──────────┘
      │ cancel / expire       │  │ extend / cancel
      ▼                       │  ▼
@@ -414,69 +414,6 @@ Scheduling-app — **поставщик** для booking-app. Booking-app выз
 
 ### Баги
 
-#### ✅ BUG-1. `SlotService.confirmHold()` и `cancelHold()` — нет пессимистической блокировки
-
-**Статус:** исправлено
-
-Добавлен метод `findByIdAndBookingIdForUpdate()` с `@Lock(PESSIMISTIC_WRITE)` в `SlotReservationRepository`. `confirmHold()` и `cancelHold()` теперь используют его вместо `findByIdAndBookingId()`.
-
----
-
-#### ✅ BUG-2. `SlotService.cancelHold()` — не очищает `expiresAt`
-
-**Статус:** исправлено
-
-Добавлен `r.setExpiresAt(null)` при переводе в `CANCELLED`. Поведение приведено в соответствие с `ZoneService.cancelZoneHold()`.
-
----
-
-#### ✅ BUG-3. `ZoneService.finishChain()` — нет блокировки
-
-**Статус:** исправлено
-
-`findById()` заменён на `findByIdForUpdate()`. Race condition с параллельным `extend()` устранён.
-
----
-
-#### ✅ BUG-4. `finishChain()` — нарушение машины состояний: `HOLD → FINISHED`
-
-**Статус:** исправлено
-
-Убрано условие `HOLD` из цикла в `finishChain()`. Теперь только `ACTIVE → FINISHED`. Просроченные HOLDы остаются для `HoldCleanupJob` (`HOLD → CANCELLED`).
-
----
-
-#### ✅ BUG-5. `GlobalExceptionHandler` — возвращает 400 вместо 422
-
-**Статус:** исправлено
-
-`HttpStatus.BAD_REQUEST` заменён на `HttpStatus.UNPROCESSABLE_ENTITY` для `BusinessException`. `NotFoundException` по-прежнему возвращает 404.
-
----
-
-#### BUG-6. ~~`cancelHold()` позволяет отменить CONFIRMED-резервацию~~ — намеренное поведение
-
-**Статус:** не баг — бизнес-решение
-
-Переход `CONFIRMED → CANCELLED` разрешён: администратор может отменить ошибочно подтверждённую резервацию. Машина состояний обновлена в разделе выше.
-
----
-
-#### ✅ BUG-7. `holdSlot()` — нет проверки, что слот не в прошлом
-
-**Статус:** исправлено
-
-Добавлена проверка `slot.getEndTime().isAfter(now)` перед созданием HOLD. Бросает `SLOT_ALREADY_FINISHED` (422). Поведение приведено в соответствие с `ZoneService.holdZone()`.
-
----
-
-#### ✅ BUG-8. `OffsetDateTime.now()` без явного часового пояса
-
-**Статус:** исправлено
-
-Реализован `Clock`-бин (`AppConfig.java`) с часовым поясом `Europe/Moscow`, настраиваемым через `pb.scheduling.timezone` в `application.yml`. `Clock` инжектируется в `SlotService`, `ZoneService` и `HoldCleanupJob`. Hibernate timezone также переключён на `Europe/Moscow` — API возвращает даты с `+03:00`.
-
----
 
 ### Проблемы безопасности
 
@@ -492,16 +429,15 @@ Scheduling-app — **поставщик** для booking-app. Booking-app выз
 
 | Файл | Описание |
 |------|----------|
-| `SlotReservationRepository.java` | `findSimple()` — не используется, дублирует `findById()` |
-| `GlobalExceptionHandler.java` | Закомментированный `handleOther()` — дубликат `handleAny()` |
+| |
 
 ---
 
 ### Архитектурные замечания
 
-- **`updateZone()` без блокировки** (`ZoneService.java`): использует `findById()` вместо `findByIdForUpdate()`. Уменьшение `capacityCompanies` одновременно с созданием HOLD — race condition.
-- **Нет валидации конфигурации** (`SchedulingProperties`): `holdMinutes` и `defaultDurationMinutesForZones` могут быть 0 или отрицательными. Код использует костыль `Math.max(1, ...)`. Нужно `@Min(1)` на record-компонентах.
-- **`confirmHold` не идемпотентен** — повторный вызов на CONFIRMED-резервацию бросает `INVALID_STATUS`. `cancelHold` при этом идемпотентен. Несогласованность API-контракта.
+- ✅ **`updateZone()` без блокировки** (`ZoneService.java`): использует `findById()` вместо `findByIdForUpdate()`. Уменьшение `capacityCompanies` одновременно с созданием HOLD — race condition.
+- ✅ **Нет валидации конфигурации** (`SchedulingProperties`): `holdMinutes` и `defaultDurationMinutesForZones` могут быть 0 или отрицательными. Код использует костыль `Math.max(1, ...)`. Нужно `@Min(1)` на record-компонентах.
+- ✅ **`confirmHold` не идемпотентен** — повторный вызов на CONFIRMED-резервацию бросает `INVALID_STATUS`. `cancelHold` при этом идемпотентен. Несогласованность API-контракта.
 
 ---
 

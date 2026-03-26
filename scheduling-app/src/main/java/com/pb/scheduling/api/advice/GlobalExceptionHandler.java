@@ -66,10 +66,4 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest()
                 .body(new ApiError("VALIDATION_ERROR", "Validation failed", Map.of("error", ex.getMessage())));
     }
-
-//    @ExceptionHandler(Exception.class)
-//    public ResponseEntity<ApiError> handleOther(Exception ex) {
-//        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-//                .body(new ApiError("INTERNAL_ERROR", "Unexpected error", Map.of()));
-//    }
 }

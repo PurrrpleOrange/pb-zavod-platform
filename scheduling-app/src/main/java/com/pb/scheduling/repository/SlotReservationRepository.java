@@ -39,12 +39,6 @@ public interface SlotReservationRepository extends JpaRepository<SlotReservation
     @Query("select r from SlotReservation r where r.id = :id and r.bookingId = :bookingId")
     Optional<SlotReservation> findByIdAndBookingIdForUpdate(@Param("id") UUID id, @Param("bookingId") UUID bookingId);
 
-    @Query("""
-        select r from SlotReservation r
-        where r.id = :id
-    """)
-    Optional<SlotReservation> findSimple(@Param("id") UUID id);
-
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select r from SlotReservation r where r.id = :id")
     Optional<SlotReservation> findByIdLocked(@Param("id")UUID id);

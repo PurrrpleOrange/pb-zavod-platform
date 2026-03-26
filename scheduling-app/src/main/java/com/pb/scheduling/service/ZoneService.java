@@ -75,7 +75,9 @@ public class ZoneService {
 
     @Transactional
     public ZoneResponse updateZone(UUID zoneId, UpdateZoneRequest req) {
-        Zone zone = findOrThrow(zoneId);
+        Zone zone = zoneRepository.findByIdForUpdate(zoneId)
+                .orElseThrow(() -> NotFoundException.of(
+                        "ZONE_NOT_FOUND", "Zone not found", Map.of("zoneId", zoneId)));
         if (req.getName() != null) zone.setName(req.getName());
         if (req.getType() != null) zone.setType(req.getType());
         if (req.getCapacityCompanies() != null) zone.setCapacityCompanies(req.getCapacityCompanies());
@@ -86,7 +88,9 @@ public class ZoneService {
 
     @Transactional
     public void deactivateZone(UUID zoneId) {
-        Zone zone = findOrThrow(zoneId);
+        Zone zone = zoneRepository.findByIdForUpdate(zoneId)
+                .orElseThrow(() -> NotFoundException.of(
+                        "ZONE_NOT_FOUND", "Zone not found", Map.of("zoneId", zoneId)));
         zone.setActive(false);
         zoneRepository.save(zone);
     }
@@ -200,8 +204,8 @@ public class ZoneService {
         }
 
         OffsetDateTime start = gameSlot.get().getStartTime();
-        OffsetDateTime end = start.plusMinutes(Math.max(1, schedulingProperties.defaultDurationMinutesForZones()));
-        OffsetDateTime expiresAt = now.plusMinutes(Math.max(1, schedulingProperties.holdMinutes()));
+        OffsetDateTime end = start.plusMinutes(schedulingProperties.defaultDurationMinutesForZones());
+        OffsetDateTime expiresAt = now.plusMinutes(schedulingProperties.holdMinutes());
 
         long overlaps = zoneReservationRepository.countOverlaps(
                 zoneId, start, end, now, null
@@ -239,6 +243,9 @@ public class ZoneService {
                     Map.of("zoneReservationId", zoneReservationId));
         }
 
+        if (r.getStatus() == ZoneReservationStatus.ACTIVE) {
+            return; // идемпотентно
+        }
         if (r.getStatus() != ZoneReservationStatus.HOLD) {
             throw BusinessException.of("INVALID_STATUS", "Only HOLD can be confirmed",
                     Map.of("zoneReservationId", zoneReservationId, "status", r.getStatus().name()));
