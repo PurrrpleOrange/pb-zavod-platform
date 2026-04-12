@@ -64,6 +64,21 @@ services:
       scheduling-app:
         condition: service_started
 
+  catalog-app:
+    build:
+      context: .
+      dockerfile: catalog-app/Dockerfile
+    container_name: pb-catalog
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/pb_catalog
+      SPRING_DATASOURCE_USERNAME: pb
+      SPRING_DATASOURCE_PASSWORD: pb
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   gateway-app:
     build:
       context: .
@@ -79,6 +94,8 @@ services:
       scheduling-app:
         condition: service_started
       booking-app:
+        condition: service_started
+      catalog-app:
         condition: service_started
 
 volumes:
